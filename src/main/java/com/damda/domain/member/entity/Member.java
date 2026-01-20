@@ -14,7 +14,6 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
-import jakarta.validation.constraints.Size;
 import java.util.UUID;
 
 /**
@@ -33,7 +32,6 @@ public class Member extends BaseTime {
     private UUID memberId;
 
     @Column(length = 20)
-    @Size(min=1, max=20)
     private String nickname;
 
     @Enumerated(EnumType.STRING)

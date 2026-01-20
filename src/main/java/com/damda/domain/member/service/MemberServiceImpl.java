@@ -1,7 +1,7 @@
 package com.damda.domain.member.service;
 
+import com.damda.domain.auth.service.AuthService;
 import com.damda.domain.member.entity.Member;
-import com.damda.domain.member.model.MemberReq;
 import com.damda.domain.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -15,11 +15,20 @@ import org.springframework.transaction.annotation.Transactional;
 public class MemberServiceImpl implements MemberService {
 
     private final MemberRepository memberRepository;
+    private final AuthService authService;
+
+    @Override
+    @Transactional(readOnly = true)
+    public Boolean isNicknameAvailable(String nickname) {
+        return !memberRepository.existsByNicknameAndStatus(nickname, Member.Status.ACTIVE);
+    }
 
     @Override
     @Transactional
-    public Member createMember(MemberReq dto) {
-        Member member = dto.toEntity();
-        return memberRepository.save(member);
+    public void withdrawMember(Member member) {
+        authService.logout(member.getMemberId());
+        member.updateStatus(Member.Status.INACTIVE);
+        member.updateProviderId(null);
+        memberRepository.save(member);
     }
 }

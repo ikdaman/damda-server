@@ -54,6 +54,10 @@ public enum ErrorCode {
     INVALID_ACCESS_TOKEN_FORMAT(HttpStatus.UNAUTHORIZED.value(), 4010107, "Access Token의 형식이 유효하지 않습니다."),
     EXPIRED_ACCESS_TOKEN(HttpStatus.UNAUTHORIZED.value(), 4010108, "Access Token이 만료되었습니다."),
     UNSUPPORTED_ACCESS_TOKEN(HttpStatus.UNAUTHORIZED.value(), 4010109, "Access Token이 지원되지 않습니다."),
+    INVALID_REFRESH_TOKEN_SIGNATURE(HttpStatus.UNAUTHORIZED.value(), 4010110, "Refresh Token의 서명이 유효하지 않습니다."),
+    INVALID_REFRESH_TOKEN_FORMAT(HttpStatus.UNAUTHORIZED.value(), 4010111, "Refresh Token의 형식이 유효하지 않습니다."),
+    EXPIRED_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED.value(), 4010112, "Refresh Token이 만료되었습니다."),
+    UNSUPPORTED_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED.value(), 4010113, "Refresh Token이 지원되지 않습니다."),
 
     // Member(02)
     NOT_FOUND_USER(HttpStatus.NOT_FOUND.value(), 4040201, "존재하지 않는 유저입니다."),
@@ -73,6 +77,7 @@ public enum ErrorCode {
 
     // Member(02)
     CONFLICT_NICKNAME(HttpStatus.CONFLICT.value(), 4090201, "사용중인 닉네임입니다."),
+    MEMBER_ALREADY_EXISTS(HttpStatus.CONFLICT.value(), 4090202, "이미 가입된 회원입니다."),
     // MyBook(03)
     NOT_FOUND_MY_BOOK(HttpStatus.NOT_FOUND.value(), 4040301,"해당 MyBook을 찾을 수 없습니다."),
     MY_BOOK_ALREADY_EXISTS(HttpStatus.CONFLICT.value(), 4090302, "이미 가지고 있는 책이에요!"),
@@ -89,7 +94,7 @@ public enum ErrorCode {
     PERSIST_EXCEPTION_TO_THIRD_PARTY(HttpStatus.INTERNAL_SERVER_ERROR.value(), 5000004,"외부 저장소에 저장을 실패했습니다."),
 
     // Auth(01)
-    FAILED_GENERATE_APP_TOKEN(HttpStatus.INTERNAL_SERVER_ERROR.value(), 5000101, "ikdaman의 앱 토큰 생성에 실패했습니다."),
+    FAILED_GENERATE_APP_TOKEN(HttpStatus.INTERNAL_SERVER_ERROR.value(), 5000101, "damda의 앱 토큰 생성에 실패했습니다."),
     KAKAO_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR.value(), 5000102, "카카오 서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요."),
     GOOGLE_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR.value(), 5000103, "구글 서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요."),
     NAVER_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR.value(), 5000104, "네이버 서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요."),
