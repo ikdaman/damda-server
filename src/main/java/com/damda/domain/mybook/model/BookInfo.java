@@ -1,6 +1,7 @@
 package com.damda.domain.mybook.model;
 
 
+import com.damda.global.util.IsbnValidator;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import jakarta.validation.constraints.NotBlank;
@@ -26,10 +27,7 @@ public class BookInfo {
 
     private Integer aladinId;
 
-    @Pattern(
-            regexp = "^(?:97[89])?\\d{9}[\\dXx]$",
-            message = "유효한 ISBN 형식이 아닙니다."
-    )
+    @IsbnValidator
     private String isbn;
 
     @NotBlank(message = "책 제목은 필수입니다.")
@@ -38,15 +36,12 @@ public class BookInfo {
     @NotBlank(message = "저자는 필수입니다.")
     private String author;
 
-    @NotBlank(message = "출판사는 필수입니다.")
     private String publisher;
 
     private String description;
 
-    @NotNull(message = "총 페이지 수는 필수입니다.")
     private Integer totalPage;
 
-    @NotNull(message = "출판일은 필수입니다.")
     @JsonFormat(pattern = "yyyy-MM-dd")
     @JsonDeserialize(using = com.damda.global.util.DateToDateTimeDeserializer.class)
     private LocalDateTime publishDate;
