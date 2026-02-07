@@ -9,6 +9,8 @@ import com.damda.domain.book.repository.WriterRepository;
 import com.damda.domain.member.entity.Member;
 import com.damda.domain.member.repository.MemberRepository;
 import com.damda.domain.mybook.entity.MyBook;
+import com.damda.domain.mybook.model.BookInfo;
+import com.damda.domain.mybook.model.HistoryInfo;
 import com.damda.domain.mybook.model.MyBookReq;
 import com.damda.domain.mybook.model.MyBookRes;
 import com.damda.domain.mybook.repository.MyBookRepository;
@@ -46,7 +48,7 @@ public class MyBookServiceImpl implements MyBookService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BaseException(NOT_FOUND_USER));
 
-        MyBookReq.BookInfo bookInfo = dto.getBookInfo();
+        BookInfo bookInfo = dto.getBookInfo();
 
         // Writer 조회 또는 생성
         Writer writer = writerRepository.findByWriterName(bookInfo.getAuthor())
@@ -116,7 +118,7 @@ public class MyBookServiceImpl implements MyBookService {
     /**
      * 새로운 MyBook 생성
      */
-    private Book createNewMyBook(MyBookReq.BookInfo bookInfo) {
+    private Book createNewMyBook(BookInfo bookInfo) {
         Book newBook = Book.builder()
                 .title(bookInfo.getTitle())
                 .publisher(bookInfo.getPublisher())
@@ -135,7 +137,7 @@ public class MyBookServiceImpl implements MyBookService {
     /**
      * HistoryInfo를 기반으로 ReadingStatus 결정
      */
-    private MyBook.ReadingStatus determineReadingStatus(MyBookReq.HistoryInfo historyInfo) {
+    private MyBook.ReadingStatus determineReadingStatus(HistoryInfo historyInfo) {
         if (historyInfo == null) {
             return MyBook.ReadingStatus.TODO;
         }

@@ -35,7 +35,7 @@ public class Book extends BaseTime {
     @Column(nullable = false, length = 255)
     private String title;
 
-    @Column(nullable = false, length = 100)
+    @Column(length = 100)
     private String publisher;
 
     @Column(name = "publish_date")
@@ -44,10 +44,10 @@ public class Book extends BaseTime {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(nullable = false, length = 13)
+    @Column(length = 13)
     private String isbn;
 
-    @Column(nullable = false, name = "total_page")
+    @Column(name = "total_page")
     @Builder.Default
     private int totalPage = 0;
 

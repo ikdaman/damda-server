@@ -8,16 +8,16 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class MyBookRes {
-    private int mybookId;
+    private Integer mybookId;
     private String title;
     private String writer;
-    private int itemId;
+    private Integer itemId;
     private String coverImage;
     private String reason;
     private String createdAt;
 
     @Builder
-    public MyBookRes(int mybookId, String title, String writer, int itemId,
+    public MyBookRes(int mybookId, String title, String writer, Integer itemId,
                      String coverImage, String reason, String createdAt) {
         this.mybookId = mybookId;
         this.title = title;
