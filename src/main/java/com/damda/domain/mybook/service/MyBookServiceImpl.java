@@ -128,7 +128,7 @@ public class MyBookServiceImpl implements MyBookService {
                 .aladinId(bookInfo.getAladinId() != null ?
                         String.valueOf(bookInfo.getAladinId()) : null)
                 .description(bookInfo.getDescription())
-                .publishDate(bookInfo.getPublishDate().atStartOfDay())
+                .publishDate(bookInfo.getPublishDate())
                 .build();
 
         return bookRepository.save(newBook);
