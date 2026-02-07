@@ -47,4 +47,12 @@ public class MemberServiceImpl implements MemberService {
 
         return response;
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Boolean isNicknameValid(String nickname) {
+        Member member = memberRepository.findByNicknameAndStatusIs(nickname, Member.Status.ACTIVE).orElse(null);
+
+        return member == null ? true : false;
+    }
 }

@@ -12,4 +12,6 @@ public interface MemberService {
     void withdrawMember(Member member);
 
     MemberRes getMember(Member member);
+
+    Boolean isNicknameValid(String nickname);
 }
