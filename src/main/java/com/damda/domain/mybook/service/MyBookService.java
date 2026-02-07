@@ -1,0 +1,38 @@
+package com.damda.domain.mybook.service;
+
+import com.damda.domain.member.entity.Member;
+import com.damda.domain.mybook.model.MyBookStoreRes;
+import com.damda.domain.mybook.model.MyBookHistoryRes;
+import com.damda.domain.mybook.model.MyBookSearchRes;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
+public interface MyBookService {
+
+    /*
+     * 내 서점 책 목록 조회
+     * @param pageable
+     * @param keyword
+     * @param member
+     * @return Page<MyBookStoreRes>
+     */
+    Page<MyBookStoreRes> getMyBookStore(Pageable pageable, String keyword, Member member);
+
+    /*
+     * 내 책 히스토리 조회
+     * @param pageable
+     * @param keyword
+     * @param member
+     * @return MyBookHistoryRes
+     */
+    MyBookHistoryRes getMyBookHistory(Pageable pageable, String keyword, Member member);
+
+    /*
+     * 내 책 통합 검색
+     * @param pageable
+     * @param query 검색어
+     * @param member
+     * @return MyBookSearchRes
+     */
+    MyBookSearchRes searchMyBooks(Pageable pageable, String query, Member member);
+}
