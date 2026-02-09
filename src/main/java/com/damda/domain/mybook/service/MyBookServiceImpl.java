@@ -127,6 +127,7 @@ public class MyBookServiceImpl implements MyBookService {
                 .coverImage(bookInfo.getCoverImage())
                 .aladinId(bookInfo.getAladinId() != null ?
                         String.valueOf(bookInfo.getAladinId()) : null)
+                .source(Book.Source.valueOf(bookInfo.getSource()))
                 .description(bookInfo.getDescription())
                 .publishDate(bookInfo.getPublishDate())
                 .build();
