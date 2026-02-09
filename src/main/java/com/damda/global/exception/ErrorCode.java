@@ -15,6 +15,7 @@ public enum ErrorCode {
      */
     // common(00)
     BAD_REQUEST_BY_VALIDATION(HttpStatus.BAD_REQUEST.value(), 4000001, "유효하지 않은 값입니다."),
+    BAD_REQUEST_INVALID_DATE_FORMAT(HttpStatus.BAD_REQUEST.value(), 4000002, "날짜 형식이 올바르지 않습니다."),
 
     /**
      * 401 Unauthorized
@@ -37,6 +38,9 @@ public enum ErrorCode {
 
     // MyBook(03)
     BOOK_NOT_OWNED_BY_MEMBER(HttpStatus.FORBIDDEN.value(), 4030301, "본인의 책이 아닙니다."),
+    MYBOOK_REASON_CANNOT_BE_EMPTY(HttpStatus.BAD_REQUEST.value(), 4000301, "읽고 싶은 이유는 필수 값입니다."),
+    BOOK_TITLE_CANNOT_BE_EMPTY(HttpStatus.BAD_REQUEST.value(), 4000302, "책 제목은 필수 값입니다."),
+    BOOK_AUTHOR_CANNOT_BE_EMPTY(HttpStatus.BAD_REQUEST.value(), 4000303, "책 작가는 필수 값입니다."),
 
     // Notice(04)
 

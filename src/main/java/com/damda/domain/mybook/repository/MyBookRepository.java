@@ -1,5 +1,6 @@
 package com.damda.domain.mybook.repository;
 
+import com.damda.domain.book.entity.Book;
 import com.damda.domain.mybook.entity.MyBook;
 import com.damda.domain.member.entity.Member;
 
@@ -8,8 +9,15 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.data.jpa.repository.EntityGraph;
+
+import java.util.Optional;
 
 public interface MyBookRepository extends JpaRepository<MyBook, Long> {
+    boolean existsByMemberAndBookAndStatus(Member member, Book Book, MyBook.Status active);
+
+    @EntityGraph(attributePaths = {"book"})
+    Optional<MyBook> findByMybookIdAndStatusIs(Long mybookId, MyBook.Status status);
 
     @Query("SELECT mb FROM MyBook mb " +
            "JOIN FETCH mb.book b " +

@@ -2,6 +2,8 @@ package com.damda.domain.member.service;
 
 import com.damda.domain.auth.service.AuthService;
 import com.damda.domain.member.entity.Member;
+import com.damda.domain.member.model.MemberReq;
+import com.damda.domain.member.model.MemberRes;
 import com.damda.domain.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -13,7 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class MemberServiceImpl implements MemberService {
-
     private final MemberRepository memberRepository;
     private final AuthService authService;
 
@@ -30,5 +31,28 @@ public class MemberServiceImpl implements MemberService {
         member.updateStatus(Member.Status.INACTIVE);
         member.updateProviderId(null);
         memberRepository.save(member);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public MemberRes getMember(Member member) {
+        MemberRes response = MemberRes.builder()
+                .nickname(member.getNickname())
+                .build();
+
+        return response;
+    }
+
+    @Override
+    @Transactional
+    public MemberRes updateMember(Member member, MemberReq memberReq) {
+        member.updateNickname(memberReq.getNickname());
+        memberRepository.save(member);
+
+        MemberRes response = MemberRes.builder()
+                .nickname(member.getNickname())
+                .build();
+
+        return response;
     }
 }

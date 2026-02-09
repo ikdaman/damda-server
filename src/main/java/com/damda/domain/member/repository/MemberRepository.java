@@ -17,4 +17,5 @@ public interface MemberRepository extends JpaRepository<Member, UUID> {
     );
     Optional<Member> findByMemberIdAndStatus(UUID memberId, Member.Status status);
     Boolean existsByNicknameAndStatus(String nickname, Member.Status status);
+    Optional<Member> findByNicknameAndStatusIs(String nickname, Member.Status status);
 }

@@ -64,6 +64,28 @@ public class MyBook extends BaseTime {
         ACTIVE, INACTIVE
     }
 
+    public void updateReason(String reason) {
+        this.reason = reason;
+    }
+
+    public void updateStartedDate(LocalDateTime startedDate) {
+        this.startedDate = startedDate;
+    }
+
+    public void updateFinishedDate(LocalDateTime finishedDate) {
+        this.finishedDate = finishedDate;
+    }
+
+    public void updateReadingStatus() {
+        if(this.startedDate == null) {
+            this.readingStatus = ReadingStatus.TODO;
+        } else if(this.finishedDate == null) {
+            this.readingStatus = ReadingStatus.INPROGRESS;
+        } else {
+            this.readingStatus = ReadingStatus.DONE;
+        }
+    }
+
     public void updateToInactive() {
         this.status = Status.INACTIVE;
     }
