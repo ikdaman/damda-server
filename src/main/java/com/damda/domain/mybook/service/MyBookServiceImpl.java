@@ -203,6 +203,7 @@ public class MyBookServiceImpl implements MyBookService {
         myBookRepository.save(myBook);
 
         return MyBookRes.builder()
+                .mybookId(Math.toIntExact(myBook.getMybookId()))
                 .title(bookInfo.getTitle())
                 .writer(bookInfo.getAuthor())
                 .itemId(bookInfo.getAladinId())
