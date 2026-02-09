@@ -1,5 +1,6 @@
 package com.damda.domain.mybook.service;
 
+import com.damda.domain.mybook.model.*;
 import com.damda.domain.member.entity.Member;
 import com.damda.domain.mybook.model.HistoryInfo;
 import com.damda.domain.mybook.model.MyBookReq;
@@ -13,7 +14,12 @@ import org.springframework.data.domain.Pageable;
 
 import java.util.UUID;
 
+/**
+ * 나의 책 서비스
+ */
 public interface MyBookService {
+
+    MyBookDetailRes getMyBookDetail(UUID memberId, Long mybookId);
     MyBookRes addMyBook(UUID memberId, MyBookReq dto);
 
     void deleteMyBook(UUID memberId, Integer mybookId);

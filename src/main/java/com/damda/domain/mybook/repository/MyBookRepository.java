@@ -12,8 +12,13 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.data.jpa.repository.EntityGraph;
 
 import java.util.Optional;
+import java.util.UUID;
 
+/**
+ * 나의 책 Repository
+ */
 public interface MyBookRepository extends JpaRepository<MyBook, Long> {
+
     boolean existsByMemberAndBookAndStatus(Member member, Book Book, MyBook.Status active);
 
     @EntityGraph(attributePaths = {"book"})
@@ -48,18 +53,37 @@ public interface MyBookRepository extends JpaRepository<MyBook, Long> {
      * 정렬: 1순위 책 제목 정확도, 2순위 최신 등록순
      */
     @Query("SELECT mb FROM MyBook mb " +
-           "JOIN FETCH mb.book b " +
-           "WHERE mb.member = :member " +
-           "AND mb.status = 'ACTIVE' " +
-           "AND b.title LIKE %:query% " +
-           "ORDER BY " +
-           "CASE WHEN b.title = :query THEN 0 " +
-           "     WHEN b.title LIKE CONCAT(:query, '%') THEN 1 " +
-           "     ELSE 2 END ASC, " +
-           "mb.createdAt DESC")
+            "JOIN FETCH mb.book b " +
+            "WHERE mb.member = :member " +
+            "AND mb.status = 'ACTIVE' " +
+            "AND b.title LIKE %:query% " +
+            "ORDER BY " +
+            "CASE WHEN b.title = :query THEN 0 " +
+            "     WHEN b.title LIKE CONCAT(:query, '%') THEN 1 " +
+            "     ELSE 2 END ASC, " +
+            "mb.createdAt DESC")
     Page<MyBook> searchByQuery(
-        @Param("member") Member member,
-        @Param("query") String query,
-        Pageable pageable
+            @Param("member") Member member,
+            @Param("query") String query,
+            Pageable pageable
+    );
+
+    /**
+     * 나의 책 상세 조회 (회원 ID와 책 ID로 조회)
+     * - ACTIVE 상태인 책만 조회
+     * - Book, Author, Writer를 join fetch로 한 번에 조회
+     */
+    @Query("""
+        SELECT m FROM MyBook m
+        JOIN FETCH m.book b
+        LEFT JOIN FETCH b.author a
+        LEFT JOIN FETCH a.writer w
+        WHERE m.mybookId = :mybookId 
+            AND m.member.memberId = :memberId
+            AND m.status = 'ACTIVE'
+    """)
+    Optional<MyBook> findByMybookIdAndMemberId(
+            @Param("mybookId") Long mybookId,
+            @Param("memberId") UUID memberId
     );
 }

@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
 @DynamicInsert
 @DynamicUpdate
 public class MyBook extends BaseTime {
+
     @Id
     @GeneratedValue
     @Column(name = "mybook_id", nullable = false, updatable = false)
@@ -52,16 +53,50 @@ public class MyBook extends BaseTime {
     @Builder.Default
     private MyBook.Status status = MyBook.Status.ACTIVE; // 기본값 ACTIVE
 
-    // 독서 상태 ENUM
+    /**
+     * 독서 상태 ENUM
+     */
     public enum ReadingStatus {
-        TODO,       // 읽을 예정
-        INPROGRESS, // 읽는 중
-        DONE        // 완독
+        TODO,       // 읽을 예정 (내 서점)
+        INPROGRESS, // 읽는 중 (히스토리)
+        DONE        // 완독 (히스토리)
     }
 
-    // 계정 상태 ENUM
+    /**
+     * 계정 상태 ENUM
+     */
     public enum Status {
         ACTIVE, INACTIVE
+    }
+
+    @Builder
+    public MyBook(Long mybookId, Member member, Book book, String reason,
+                  ReadingStatus readingStatus, LocalDateTime startedDate,
+                  LocalDateTime finishedDate, Status status) {
+        this.mybookId = mybookId;
+        this.member = member;
+        this.book = book;
+        this.reason = reason;
+        this.readingStatus = readingStatus;
+        this.startedDate = startedDate;
+        this.finishedDate = finishedDate;
+        this.status = status;
+    }
+
+    /**
+     * INACTIVE로 변경
+     */
+    public void updateToInactive() {
+        this.status = Status.INACTIVE;
+    }
+
+    /**
+     * 책장 타입 반환
+     * - TODO: STORE (내 서점)
+     * - INPROGRESS, DONE: HISTORY (히스토리)
+     */
+    public String getShelfType() {
+        return this.readingStatus == ReadingStatus.TODO ? "STORE" : "HISTORY";
     }
 
     public void updateReason(String reason) {
@@ -84,23 +119,5 @@ public class MyBook extends BaseTime {
         } else {
             this.readingStatus = ReadingStatus.DONE;
         }
-    }
-
-    public void updateToInactive() {
-        this.status = Status.INACTIVE;
-    }
-
-    @Builder
-    public MyBook(Long mybookId, Member member, Book book, String reason,
-                  ReadingStatus readingStatus, LocalDateTime startedDate,
-                  LocalDateTime finishedDate, Status status) {
-        this.mybookId = mybookId;
-        this.member = member;
-        this.book = book;
-        this.reason = reason;
-        this.readingStatus = readingStatus;
-        this.startedDate = startedDate;
-        this.finishedDate = finishedDate;
-        this.status = status;
     }
 }
