@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
 @DynamicInsert
 @DynamicUpdate
 public class MyBook extends BaseTime {
+
     @Id
     @GeneratedValue
     @Column(name = "mybook_id", nullable = false, updatable = false)
@@ -52,20 +53,20 @@ public class MyBook extends BaseTime {
     @Builder.Default
     private MyBook.Status status = MyBook.Status.ACTIVE; // 기본값 ACTIVE
 
-    // 독서 상태 ENUM
+    /**
+     * 독서 상태 ENUM
+     */
     public enum ReadingStatus {
-        TODO,       // 읽을 예정
-        INPROGRESS, // 읽는 중
-        DONE        // 완독
+        TODO,       // 읽을 예정 (내 서점)
+        INPROGRESS, // 읽는 중 (히스토리)
+        DONE        // 완독 (히스토리)
     }
 
-    // 계정 상태 ENUM
+    /**
+     * 계정 상태 ENUM
+     */
     public enum Status {
         ACTIVE, INACTIVE
-    }
-
-    public void updateToInactive() {
-        this.status = Status.INACTIVE;
     }
 
     @Builder
@@ -80,5 +81,43 @@ public class MyBook extends BaseTime {
         this.startedDate = startedDate;
         this.finishedDate = finishedDate;
         this.status = status;
+    }
+
+    /**
+     * INACTIVE로 변경
+     */
+    public void updateToInactive() {
+        this.status = Status.INACTIVE;
+    }
+
+    /**
+     * 책장 타입 반환
+     * - TODO: STORE (내 서점)
+     * - INPROGRESS, DONE: HISTORY (히스토리)
+     */
+    public String getShelfType() {
+        return this.readingStatus == ReadingStatus.TODO ? "STORE" : "HISTORY";
+    }
+
+    public void updateReason(String reason) {
+        this.reason = reason;
+    }
+
+    public void updateStartedDate(LocalDateTime startedDate) {
+        this.startedDate = startedDate;
+    }
+
+    public void updateFinishedDate(LocalDateTime finishedDate) {
+        this.finishedDate = finishedDate;
+    }
+
+    public void updateReadingStatus() {
+        if(this.startedDate == null) {
+            this.readingStatus = ReadingStatus.TODO;
+        } else if(this.finishedDate == null) {
+            this.readingStatus = ReadingStatus.INPROGRESS;
+        } else {
+            this.readingStatus = ReadingStatus.DONE;
+        }
     }
 }

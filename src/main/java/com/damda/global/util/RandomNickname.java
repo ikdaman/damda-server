@@ -2,6 +2,7 @@ package com.damda.global.util;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+
 import java.text.MessageFormat;
 
 // 닉네임 중복검사 -> 가입이 이루어지는 Service 단에서 검사하는 편이 의존성을 줄일 수 있음 (추가적인 Repository를 선언할 필요 없음)
