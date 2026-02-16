@@ -47,7 +47,7 @@ public class MyBookServiceImpl implements MyBookService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<MyBookStoreRes> getMyBookStore(Pageable pageable, String keyword, Member member) {
+    public PageRes<MyBookStorePageRes.BookItem> getMyBookStore(Pageable pageable, String keyword, Member member) {
         Page<MyBook> myBooks = myBookRepository.findAllByMemberAndReadingStatusAndKeyword(
                 member,
                 MyBook.ReadingStatus.TODO,
@@ -55,23 +55,33 @@ public class MyBookServiceImpl implements MyBookService {
                 pageable
         );
 
-        return myBooks.map(myBook -> MyBookStoreRes.builder()
-                .mybookId(myBook.getMybookId())
-                .createdDate(myBook.getCreatedAt())
-                .bookInfo(MyBookStoreRes.BookInfo.builder()
-                        .title(myBook.getBook().getTitle())
-                        .author(myBook.getBook().getAuthor().stream()
-                                .map(author -> author.getWriter().getWriterName())
-                                .collect(Collectors.toList()))
-                        .coverImage(myBook.getBook().getCoverImage())
-                        .description(myBook.getBook().getDescription())
+        List<MyBookStorePageRes.BookItem> bookItems = myBooks.getContent().stream()
+                .map(myBook -> MyBookStorePageRes.BookItem.builder()
+                        .mybookId(myBook.getMybookId())
+                        .createdDate(myBook.getCreatedAt())
+                        .reason(myBook.getReason())
+                        .bookInfo(MyBookStorePageRes.BookInfo.builder()
+                                .title(myBook.getBook().getTitle())
+                                .author(myBook.getBook().getAuthor().stream()
+                                        .map(author -> author.getWriter().getWriterName())
+                                        .collect(Collectors.toList()))
+                                .coverImage(myBook.getBook().getCoverImage())
+                                .description(myBook.getBook().getDescription())
+                                .build())
                         .build())
-                .build());
+                .collect(Collectors.toList());
+
+        return PageRes.<MyBookStorePageRes.BookItem>builder()
+                .totalPages(myBooks.getTotalPages())
+                .nowPage(myBooks.getNumber())
+                .totalElements(myBooks.getTotalElements())
+                .books(bookItems)
+                .build();
     }
 
     @Override
     @Transactional(readOnly = true)
-    public MyBookHistoryRes getMyBookHistory(Pageable pageable, String keyword, Member member) {
+    public PageRes<MyBookHistoryRes.BookItem> getMyBookHistory(Pageable pageable, String keyword, Member member) {
         Page<MyBook> myBooks = myBookRepository.findAllByMemberAndReadingStatusesAndKeyword(
                 member,
                 List.of(MyBook.ReadingStatus.INPROGRESS, MyBook.ReadingStatus.DONE),
@@ -95,16 +105,17 @@ public class MyBookServiceImpl implements MyBookService {
                         .build())
                 .collect(Collectors.toList());
 
-        return MyBookHistoryRes.builder()
+        return PageRes.<MyBookHistoryRes.BookItem>builder()
                 .totalPages(myBooks.getTotalPages())
                 .nowPage(myBooks.getNumber())
+                .totalElements(myBooks.getTotalElements())
                 .books(bookItems)
                 .build();
     }
 
     @Override
     @Transactional(readOnly = true)
-    public MyBookSearchRes searchMyBooks(Pageable pageable, String query, Member member) {
+    public PageRes<MyBookSearchRes.BookItem> searchMyBooks(Pageable pageable, String query, Member member) {
         Page<MyBook> myBooks = myBookRepository.searchByQuery(member, query, pageable);
 
         List<MyBookSearchRes.BookItem> bookItems = myBooks.getContent().stream()
@@ -125,7 +136,7 @@ public class MyBookServiceImpl implements MyBookService {
                         .build())
                 .collect(Collectors.toList());
 
-        return MyBookSearchRes.builder()
+        return PageRes.<MyBookSearchRes.BookItem>builder()
                 .totalPages(myBooks.getTotalPages())
                 .nowPage(myBooks.getNumber())
                 .totalElements(myBooks.getTotalElements())

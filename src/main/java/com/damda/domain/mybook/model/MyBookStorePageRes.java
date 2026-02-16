@@ -6,12 +6,21 @@ import java.time.LocalDateTime;
 import lombok.Builder;
 import lombok.Getter;
 
+/**
+ * 내 서점 조회 - BookItem 정의
+ */
 @Getter
 @Builder
-public class MyBookStoreRes {
-    private Long mybookId;
-    private LocalDateTime createdDate;
-    private BookInfo bookInfo;
+public class MyBookStorePageRes {
+
+    @Getter
+    @Builder
+    public static class BookItem {
+        private Long mybookId;
+        private LocalDateTime createdDate;
+        private String reason;
+        private BookInfo bookInfo;
+    }
 
     @Getter
     @Builder
