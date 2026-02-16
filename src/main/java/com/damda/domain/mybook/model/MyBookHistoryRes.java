@@ -6,12 +6,12 @@ import java.time.LocalDateTime;
 import lombok.Builder;
 import lombok.Getter;
 
+/**
+ * 내 책 히스토리 - BookItem 정의
+ */
 @Getter
 @Builder
 public class MyBookHistoryRes {
-    private int totalPages;
-    private int nowPage;
-    private List<BookItem> books;
 
     @Getter
     @Builder

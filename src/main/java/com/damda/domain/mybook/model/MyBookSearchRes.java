@@ -7,13 +7,12 @@ import java.time.LocalDateTime;
 import lombok.Builder;
 import lombok.Getter;
 
+/**
+ * 내 책 통합 검색 - BookItem 정의
+ */
 @Getter
 @Builder
 public class MyBookSearchRes {
-    private int totalPages;
-    private int nowPage;
-    private long totalElements;
-    private List<BookItem> books;
 
     @Getter
     @Builder

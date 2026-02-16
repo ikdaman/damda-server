@@ -33,7 +33,7 @@ public class MyBookController {
      * 정렬: 1순위 책 제목 정확도, 2순위 최신 등록순
      */
     @GetMapping
-    public ResponseEntity<MyBookSearchRes> searchMyBooks(
+    public ResponseEntity<PageRes<MyBookSearchRes.BookItem>> searchMyBooks(
             @PageableDefault(page = 0, size = 10) Pageable pageable,
             @RequestParam String query,
             @AuthenticationPrincipal AuthMember authMember
@@ -42,7 +42,7 @@ public class MyBookController {
     }
 
     @GetMapping("/store")
-    public ResponseEntity<Page<MyBookStoreRes>> getMyBookStore(
+    public ResponseEntity<PageRes<MyBookStorePageRes.BookItem>> getMyBookStore(
             @PageableDefault(page = 0, size = 5, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             @RequestParam(required = false) String keyword,
             @AuthenticationPrincipal AuthMember authMember
@@ -51,7 +51,7 @@ public class MyBookController {
     }
 
     @GetMapping("/history")
-    public ResponseEntity<MyBookHistoryRes> getMyBookHistory(
+    public ResponseEntity<PageRes<MyBookHistoryRes.BookItem>> getMyBookHistory(
             @PageableDefault(page = 0, size = 5, sort = "startedDate", direction = Sort.Direction.ASC) Pageable pageable,
             @RequestParam(required = false) String keyword,
             @AuthenticationPrincipal AuthMember authMember

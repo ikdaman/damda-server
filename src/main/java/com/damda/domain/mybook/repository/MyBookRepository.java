@@ -26,6 +26,7 @@ public interface MyBookRepository extends JpaRepository<MyBook, Long> {
     @Query("SELECT mb FROM MyBook mb " +
            "JOIN FETCH mb.book b " +
            "WHERE mb.member = :member " +
+           "AND mb.status = 'ACTIVE' " +
            "AND mb.readingStatus = :readingStatus " +
            "AND (:keyword IS NULL OR b.title LIKE %:keyword%)")
     Page<MyBook> findAllByMemberAndReadingStatusAndKeyword(
@@ -38,6 +39,7 @@ public interface MyBookRepository extends JpaRepository<MyBook, Long> {
     @Query("SELECT mb FROM MyBook mb " +
            "JOIN FETCH mb.book b " +
            "WHERE mb.member = :member " +
+           "AND mb.status = 'ACTIVE' " +
            "AND mb.readingStatus IN :readingStatuses " +
            "AND (:keyword IS NULL OR b.title LIKE %:keyword%)")
     Page<MyBook> findAllByMemberAndReadingStatusesAndKeyword(
