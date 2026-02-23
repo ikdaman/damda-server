@@ -8,17 +8,22 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class DateToDateTimeDeserializer extends JsonDeserializer<LocalDateTime> {
+
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
     @Override
     public LocalDateTime deserialize(JsonParser jsonParser, DeserializationContext deserializationContext)
             throws IOException, JacksonException {
-        LocalDate date = LocalDate.parse(jsonParser.getText());
+        String dateString = jsonParser.getText();
 
-        if (date == null) {
+        if (dateString == null || dateString.trim().isEmpty()) {
             return null;
         }
 
+        LocalDate date = LocalDate.parse(dateString.trim(), DATE_FORMATTER);
         return date.atStartOfDay();
     }
 }
