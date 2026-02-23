@@ -231,7 +231,8 @@ public class MyBookServiceImpl implements MyBookService {
                 .title(bookInfo.getTitle())
                 .publisher(bookInfo.getPublisher())
                 .isbn(bookInfo.getIsbn())
-                .totalPage(bookInfo.getTotalPage())
+                .totalPage(bookInfo.getTotalPage() != null ?
+                        bookInfo.getTotalPage() : 0)
                 .coverImage(bookInfo.getCoverImage())
                 .aladinId(bookInfo.getAladinId() != null ?
                         String.valueOf(bookInfo.getAladinId()) : null)
