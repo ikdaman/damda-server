@@ -184,11 +184,6 @@ public class MyBookServiceImpl implements MyBookService {
                     .build());
         }
 
-        // 한 사용자가 책장에 같은 책을 중복으로 저장할 수 없음 (ACTIVE 상태만 체크)
-        if(myBookRepository.existsByMemberAndBookAndStatus(member, book, MyBook.Status.ACTIVE)) {
-            throw new BaseException(MY_BOOK_ALREADY_EXISTS);
-        }
-
         // ReadingStatus 결정
         MyBook.ReadingStatus readingStatus = determineReadingStatus(dto.getHistoryInfo());
 
