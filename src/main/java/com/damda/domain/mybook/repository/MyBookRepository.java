@@ -23,12 +23,20 @@ public interface MyBookRepository extends JpaRepository<MyBook, Long> {
     @EntityGraph(attributePaths = {"book"})
     Optional<MyBook> findByMybookIdAndStatusIs(Long mybookId, MyBook.Status status);
 
-    @Query("SELECT mb FROM MyBook mb " +
+    @Query(value = "SELECT mb FROM MyBook mb " +
            "JOIN FETCH mb.book b " +
+           "LEFT JOIN FETCH b.author a " +
+           "LEFT JOIN FETCH a.writer w " +
            "WHERE mb.member = :member " +
            "AND mb.status = 'ACTIVE' " +
            "AND mb.readingStatus = :readingStatus " +
-           "AND (:keyword IS NULL OR b.title LIKE %:keyword%)")
+           "AND (COALESCE(:keyword, '') = '' OR b.title LIKE CONCAT('%', COALESCE(:keyword, ''), '%'))",
+           countQuery = "SELECT COUNT(mb) FROM MyBook mb " +
+           "JOIN mb.book b " +
+           "WHERE mb.member = :member " +
+           "AND mb.status = 'ACTIVE' " +
+           "AND mb.readingStatus = :readingStatus " +
+           "AND (COALESCE(:keyword, '') = '' OR b.title LIKE CONCAT('%', COALESCE(:keyword, ''), '%'))")
     Page<MyBook> findAllByMemberAndReadingStatusAndKeyword(
         @Param("member") Member member,
         @Param("readingStatus") MyBook.ReadingStatus readingStatus,
@@ -36,12 +44,20 @@ public interface MyBookRepository extends JpaRepository<MyBook, Long> {
         Pageable pageable
     );
 
-    @Query("SELECT mb FROM MyBook mb " +
+    @Query(value = "SELECT mb FROM MyBook mb " +
            "JOIN FETCH mb.book b " +
+           "LEFT JOIN FETCH b.author a " +
+           "LEFT JOIN FETCH a.writer w " +
            "WHERE mb.member = :member " +
            "AND mb.status = 'ACTIVE' " +
            "AND mb.readingStatus IN :readingStatuses " +
-           "AND (:keyword IS NULL OR b.title LIKE %:keyword%)")
+           "AND (COALESCE(:keyword, '') = '' OR b.title LIKE CONCAT('%', COALESCE(:keyword, ''), '%'))",
+           countQuery = "SELECT COUNT(mb) FROM MyBook mb " +
+           "JOIN mb.book b " +
+           "WHERE mb.member = :member " +
+           "AND mb.status = 'ACTIVE' " +
+           "AND mb.readingStatus IN :readingStatuses " +
+           "AND (COALESCE(:keyword, '') = '' OR b.title LIKE CONCAT('%', COALESCE(:keyword, ''), '%'))")
     Page<MyBook> findAllByMemberAndReadingStatusesAndKeyword(
         @Param("member") Member member,
         @Param("readingStatuses") java.util.List<MyBook.ReadingStatus> readingStatuses,
@@ -57,7 +73,7 @@ public interface MyBookRepository extends JpaRepository<MyBook, Long> {
             "JOIN FETCH mb.book b " +
             "WHERE mb.member = :member " +
             "AND mb.status = 'ACTIVE' " +
-            "AND b.title LIKE %:query% " +
+            "AND b.title LIKE CONCAT('%', :query, '%') " +
             "ORDER BY " +
             "CASE WHEN b.title = :query THEN 0 " +
             "     WHEN b.title LIKE CONCAT(:query, '%') THEN 1 " +
