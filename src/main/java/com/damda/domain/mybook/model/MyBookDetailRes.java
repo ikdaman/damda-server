@@ -39,6 +39,7 @@ public class MyBookDetailRes {
         private String publishDate;
         private String isbn;
         private String aladinId;
+        private String description;
     }
 
     /**
