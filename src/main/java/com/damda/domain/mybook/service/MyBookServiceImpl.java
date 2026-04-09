@@ -442,6 +442,7 @@ public class MyBookServiceImpl implements MyBookService {
                         : null)
                 .isbn(book.getIsbn())
                 .aladinId(book.getAladinId())
+                .description(book.getDescription())
                 .build();
 
         // 4. HistoryInfo 생성
