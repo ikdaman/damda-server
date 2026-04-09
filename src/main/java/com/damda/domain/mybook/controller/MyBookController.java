@@ -4,6 +4,7 @@ import com.damda.domain.mybook.model.*;
 import com.damda.domain.mybook.service.MyBookService;
 import com.damda.global.auth.model.AuthMember;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -23,6 +24,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/mybooks")
 @RequiredArgsConstructor
+@Slf4j
 public class MyBookController {
 
     private final MyBookService myBookService;
@@ -47,6 +49,13 @@ public class MyBookController {
             @RequestParam(required = false) String keyword,
             @AuthenticationPrincipal AuthMember authMember
     ) {
+        log.info("[getMyBookStore] memberId={}, nickname={}, keyword={}, page={}, size={}", 
+                authMember.getMember().getMemberId(), 
+                authMember.getMember().getNickname(),
+                keyword, 
+                pageable.getPageNumber(), 
+                pageable.getPageSize());
+        
         return ResponseEntity.ok(myBookService.getMyBookStore(pageable, keyword, authMember.getMember()));
     }
 
