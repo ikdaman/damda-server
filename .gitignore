@@ -39,5 +39,7 @@ out/
 ### secret ###
 **/src/main/resources/*.yml
 **/src/main/resources/*.pem
+**/src/main/resources/*firebase-adminsdk*.json
+**/firebase-service-account.json
 **/src/main/**/config/
 **/server-private

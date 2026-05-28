@@ -27,6 +27,8 @@ ALTER TABLE member ADD COLUMN last_book_action_at TIMESTAMP;
 
 - `push_enabled`: 전체 ON/OFF 토글
 - `last_book_action_at`: 책 추가/상태변경/삭제 시 갱신. A 잡 진입 조건의 기준 시점.
+- `Member` 엔티티에는 `pushEnabled` 기본값 `true`, `lastBookActionAt` nullable 필드를 추가한다.
+  - 현재 `Member`는 직접 생성자에 `@Builder`가 있으므로 필드 추가 시 생성자 파라미터와 `@Builder.Default` 기본값을 함께 갱신해야 한다.
 
 ### 3.2 `device_token` 신규 테이블
 
@@ -45,6 +47,7 @@ CREATE INDEX idx_device_token_member ON device_token(member_id);
 - 한 유저에 N개 디바이스 가능
 - `fcm_token` UNIQUE — 다른 유저가 같은 기기에 로그인 시 기존 레코드 `member_id` 갱신 정책 적용
 - FCM 응답에서 무효 토큰(`UNREGISTERED`, `INVALID_ARGUMENT`)은 자동 삭제
+- 토큰 등록/갱신 시 `updated_at`은 엔티티 메서드 또는 `@PreUpdate`/`@PrePersist`로 명시적으로 갱신한다.
 
 ### 3.3 `notification_log` 신규 테이블
 
@@ -53,12 +56,15 @@ CREATE TABLE notification_log (
     id BIGSERIAL PRIMARY KEY,
     member_id UUID NOT NULL REFERENCES member(member_id),
     type CHAR(1) NOT NULL,  -- 'A' | 'B'
+    status VARCHAR(20) NOT NULL DEFAULT 'SUCCESS', -- 'SUCCESS' | 'FAILED'
     sent_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 CREATE INDEX idx_notification_log_lookup ON notification_log(member_id, type, sent_at DESC);
 ```
 
 - 쿨다운 계산용. "최근 7일 내 B 발동 여부", "이번 달 A 발동 횟수" 쿼리 기반.
+- 쿨다운/월 제한 계산에는 `status = 'SUCCESS'` 로그만 사용한다.
+- 성공 기준: 대상 멤버의 활성 토큰 중 1개 이상 FCM 발송 성공 시 `SUCCESS` 기록. 모든 토큰이 실패하면 `FAILED` 기록 또는 미기록 중 하나로 구현하되, 쿨다운 계산에서는 제외한다.
 
 ## 4. 도메인 패키지 구조
 
@@ -152,29 +158,45 @@ public record BookActionEvent(UUID memberId) {}
 
 ### 6.2 발행 지점 (`MyBookServiceImpl`)
 
-| 메서드 | 라인 | 액션 |
+| 메서드 | 액션 | 발행 값 |
 | --- | --- | --- |
-| `addMyBook` | 159 | 책 추가 |
-| `deleteMyBook` | 273 | 책 삭제 (soft) |
-| `updateMyBook` | 289 | 책 정보 수정 |
-| `updateReadingStatus` | 382 | 읽기 상태 변경 |
+| `addMyBook(UUID memberId, ...)` | 책 추가 | `memberId` |
+| `deleteMyBook(UUID memberId, ...)` | 책 삭제 (soft) | `memberId` |
+| `updateMyBook(Member member, ...)` | 책 정보 수정 | `member.getMemberId()` |
+| `updateReadingStatus(Member member, ...)` | 읽기 상태 변경 | `member.getMemberId()` |
 
-각 메서드 끝에 1줄 추가:
+각 메서드의 정상 변경 완료 후 return 직전에 1줄 추가:
 ```java
+eventPublisher.publishEvent(new BookActionEvent(memberId));
+// 또는
 eventPublisher.publishEvent(new BookActionEvent(member.getMemberId()));
 ```
+
+주의:
+- `addMyBook(UUID memberId, ...)`, `deleteMyBook(UUID memberId, ...)`는 `memberId`를 그대로 사용해 발행한다.
+- `updateMyBook(Member member, ...)`, `updateReadingStatus(Member member, ...)`는 `member.getMemberId()`로 발행한다.
+- 예외가 발생하기 전에는 발행하지 않는다. 정상 변경이 끝난 뒤 return 직전에 발행한다.
 
 ### 6.3 리스너
 
 ```java
 @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+@Transactional(propagation = Propagation.REQUIRES_NEW)
 public void onBookAction(BookActionEvent event) {
     memberRepository.updateLastBookActionAt(event.memberId(), LocalDateTime.now());
 }
 ```
 
 - 트랜잭션 커밋 후 실행 → 롤백 시 미반영
-- 별도 트랜잭션. 실패해도 본 로직에 영향 없음
+- `REQUIRES_NEW`로 별도 트랜잭션을 열어 `last_book_action_at` 갱신을 커밋한다.
+- 리스너 실패는 본 로직 커밋 이후 발생하므로 사용자 요청 자체는 성공 처리된다. 실패 로그를 남기고 다음 책 액션에서 회복한다.
+- `MemberRepository`에는 `@Modifying` update 쿼리 추가:
+
+```java
+@Modifying(clearAutomatically = true)
+@Query("UPDATE Member m SET m.lastBookActionAt = :now WHERE m.memberId = :memberId")
+int updateLastBookActionAt(@Param("memberId") UUID memberId, @Param("now") LocalDateTime now);
+```
 
 ## 7. 스케줄러
 
@@ -201,6 +223,7 @@ public void runJobA() {
 - `last_book_action_at <= NOW() - 7일` OR `last_book_action_at IS NULL`
 - 이번 달 A 발동 횟수 < 2
 - 최근 7일 내 B 발동 이력 없음
+- 활성 디바이스 토큰 1개 이상 보유
 
 랜덤 문구 3종 중 1개 선택:
 - "읽고 싶다고 생각한 책, 여기 기록해두세요"
@@ -221,7 +244,15 @@ public void runJobB() {
 쿼리 조건:
 - `push_enabled = TRUE`
 - TODO 상태 ACTIVE MyBook 1개 이상 보유
-- 오늘 A 발동 이력 없음 → 있으면 다음날 20시로 미룸 (별도 cron `0 0 20 2-8 * SAT` 보완)
+- 오늘 A 발동 이력 없음
+- 이번 달 B 성공 발송 이력 없음
+- 활성 디바이스 토큰 1개 이상 보유
+
+충돌 처리:
+- 첫째 금요일 20시에 오늘 A 성공 발송 이력이 있는 유저는 B 발송 대상에서 제외한다.
+- 제외된 유저는 다음날 20시 보정 잡(`0 0 20 2-8 * SAT`)에서 재평가한다.
+- 보정 잡은 반드시 `이번 달 B 성공 발송 이력 없음` 조건을 포함해 금요일에 이미 B를 받은 유저에게 중복 발송하지 않는다.
+- 보정 잡에서도 대상 유저가 당일 A 발송 이력이 있으면 해당 월 B는 스킵한다. 별도 보류 테이블은 P0~P2 범위에서 두지 않는다.
 
 문구 (랜덤):
 - "n일 전에 담아둔 책이 있어요. {book.title} 읽어보셨나요?"
@@ -246,6 +277,8 @@ implementation 'com.google.firebase:firebase-admin:9.2.0'
 ### 8.2 서비스 계정 키
 
 - `firebase-service-account.json` → `src/main/resources/` (`*.yml`처럼 gitignore)
+- 현재 저장소에 `src/main/resources/`가 없으므로 P0에서 디렉터리를 생성한다.
+- `.gitignore`에 `src/main/resources/firebase-service-account.json` 또는 `**/firebase-service-account.json`을 추가한다.
 - 운영: 환경변수 `GOOGLE_APPLICATION_CREDENTIALS` 또는 Spring Cloud Vault
 
 ### 8.3 `FirebaseConfig`
@@ -255,6 +288,9 @@ implementation 'com.google.firebase:firebase-admin:9.2.0'
 public class FirebaseConfig {
     @Bean
     FirebaseApp firebaseApp() throws IOException {
+        if (!FirebaseApp.getApps().isEmpty()) {
+            return FirebaseApp.getInstance();
+        }
         InputStream serviceAccount = new ClassPathResource("firebase-service-account.json").getInputStream();
         FirebaseOptions options = FirebaseOptions.builder()
             .setCredentials(GoogleCredentials.fromStream(serviceAccount))
@@ -293,6 +329,10 @@ for (int i = 0; i < response.getResponses().size(); i++) {
 }
 ```
 
+- FCM multicast는 요청당 최대 500개 토큰 제한이 있으므로 `tokens`는 500개 이하로 chunk 처리한다.
+- 발송 결과는 chunk별로 취합한다. 멤버 단위 로그는 해당 멤버의 토큰 중 1개 이상 성공했을 때 `SUCCESS`로 기록한다.
+- `INVALID_ARGUMENT`는 메시지 payload 오류에서도 발생할 수 있으므로, 해당 토큰 하나만 실패했고 토큰 포맷이 명백히 잘못된 경우에만 삭제하거나, 운영 로그 확인 후 삭제 정책을 보수적으로 적용한다.
+
 ## 9. 푸시 페이로드 규약
 
 프론트 deep link 라우팅용 `data` 필드:
@@ -310,8 +350,8 @@ for (int i = 0; i < response.getResponses().size(); i++) {
 | 단계 | 범위 | 산출물 |
 | --- | --- | --- |
 | **P0** | FirebaseConfig + `device_token` 테이블/엔티티/등록·해제 API + `push_enabled` 컬럼/토글 API + 테스트 push endpoint | FCM 인프라 검증 |
-| **P1** | `BookActionEvent` 발행/리스너 + `last_book_action_at` 트래킹 + A 잡 cron + `notification_log` | 핵심 알림 가동 |
-| **P2** | B 잡 cron + 책 랜덤 선택 + A/B 충돌 처리(다음날 보정 cron) | 월 1회 리마인드 |
+| **P1** | `BookActionEvent` 발행/리스너 + `last_book_action_at` 트래킹 + A 잡 cron + `notification_log(status 포함)` | 핵심 알림 가동 |
+| **P2** | B 잡 cron + 책 랜덤 선택 + A/B 충돌 처리(다음날 보정 cron, 월 B 중복 방지 조건 포함) | 월 1회 리마인드 |
 | **P3** | 무효 토큰 자동 정리 + 운영 로그 + Slack/Sentry 모니터링 | 운영 안정성 |
 
 ## 11. 위험과 대응
