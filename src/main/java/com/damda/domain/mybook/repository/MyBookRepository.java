@@ -18,7 +18,7 @@ import java.util.UUID;
  */
 public interface MyBookRepository extends JpaRepository<MyBook, Long> {
 
-    boolean existsByMemberAndBookAndStatus(Member member, Book Book, MyBook.Status active);
+    boolean existsByMemberAndReadingStatusAndStatus(Member member, MyBook.ReadingStatus readingStatus, MyBook.Status status);
 
     @EntityGraph(attributePaths = {"book"})
     Optional<MyBook> findByMybookIdAndStatusIs(Long mybookId, MyBook.Status status);

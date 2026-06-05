@@ -60,7 +60,10 @@ dependencies {
 	implementation 'com.github.mwiede:jsch:0.2.15'
 	// application.yml의 환경 변수를 class에서 사용하기 위한 라이브러리
 	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
-	
+
+	// Firebase Cloud Messaging
+	implementation 'com.google.firebase:firebase-admin:9.2.0'
+
 	// Apache Commons Lang
 //	implementation 'org.apache.commons:commons-lang3:3.12.0'
 }

@@ -14,6 +14,8 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
+
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -41,6 +43,12 @@ public class Member extends BaseTime {
     @Column(name = "provider_id", unique = true)
     private String providerId;
 
+    @Column(nullable = false)
+    private boolean pushEnabled = true;
+
+    @Column
+    private LocalDateTime lastBookActionAt;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
@@ -57,11 +65,15 @@ public class Member extends BaseTime {
     }
 
     @Builder
-    public Member(UUID memberId, String nickname, Provider provider, String providerId, Status status) {
+    public Member(UUID memberId, String nickname, Provider provider, String providerId,
+                  Boolean pushEnabled, LocalDateTime lastBookActionAt, Status status) {
+
         this.memberId = memberId;
         this.nickname = nickname;
         this.provider = provider;
         this.providerId = providerId;
+        this.pushEnabled = pushEnabled;
+        this.lastBookActionAt = lastBookActionAt;
         this.status = status;
     }
 
@@ -75,5 +87,13 @@ public class Member extends BaseTime {
 
     public void updateProviderId(String providerId) {
         this.providerId = providerId;
+    }
+
+    public void updatePushEnabled(boolean pushEnabled) {
+        this.pushEnabled = pushEnabled;
+    }
+
+    public void updateLastBookActionAt(LocalDateTime lastBookActionAt) {
+        this.lastBookActionAt = lastBookActionAt;
     }
 }
