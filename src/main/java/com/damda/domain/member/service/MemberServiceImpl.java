@@ -5,6 +5,8 @@ import com.damda.domain.member.entity.Member;
 import com.damda.domain.member.model.MemberReq;
 import com.damda.domain.member.model.MemberRes;
 import com.damda.domain.member.repository.MemberRepository;
+import com.damda.global.exception.BaseException;
+import com.damda.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,6 +48,12 @@ public class MemberServiceImpl implements MemberService {
     @Override
     @Transactional
     public MemberRes updateMember(Member member, MemberReq memberReq) {
+        String nickname = memberReq.getNickname();
+
+        if(!isNicknameAvailable(nickname)) {;
+            throw new BaseException(ErrorCode.CONFLICT_NICKNAME);
+        }
+
         member.updateNickname(memberReq.getNickname());
         memberRepository.save(member);
 
