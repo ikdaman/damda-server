@@ -214,6 +214,9 @@ public class MyBookServiceImpl implements MyBookService {
         MyBook myBook = myBookBuilder.build();
         myBookRepository.save(myBook);
 
+        // member의 lastBookActionAt 업데이트
+        memberRepository.updateLastBookActionAt(memberId, LocalDateTime.now());
+
         return MyBookRes.builder()
                 .mybookId(Math.toIntExact(myBook.getMybookId()))
                 .title(bookInfo.getTitle())
@@ -376,6 +379,9 @@ public class MyBookServiceImpl implements MyBookService {
 
         myBookRepository.save(mybook);
 
+        // member의 lastBookActionAt 업데이트
+        memberRepository.updateLastBookActionAt(member.getMemberId(), LocalDateTime.now());
+
         return mybook.getMybookId();
     }
 
@@ -400,6 +406,9 @@ public class MyBookServiceImpl implements MyBookService {
         // readingStatus 업데이트
         mybook.updateReadingStatus();
         myBookRepository.save(mybook);
+
+        // member의 lastBookActionAt 업데이트
+        memberRepository.updateLastBookActionAt(member.getMemberId(), LocalDateTime.now());
 
         return mybook.getMybookId();
     }
