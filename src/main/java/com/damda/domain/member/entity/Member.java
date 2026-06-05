@@ -43,10 +43,10 @@ public class Member extends BaseTime {
     @Column(name = "provider_id", unique = true)
     private String providerId;
 
-    @Column(nullable = false)
-    private boolean pushEnabled = true;
+    @Column(name = "push_enabled", nullable = false)
+    private boolean pushEnabled = false;
 
-    @Column
+    @Column(name = "last_book_action_at")
     private LocalDateTime lastBookActionAt;
 
     @Enumerated(EnumType.STRING)
