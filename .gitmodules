@@ -1,0 +1,3 @@
+[submodule "damda-server-private"]
+	path = damda-server-private
+	url = https://github.com/ikdaman/damda-server-private.git
