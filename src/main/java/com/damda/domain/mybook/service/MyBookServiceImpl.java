@@ -173,7 +173,7 @@ public class MyBookServiceImpl implements MyBookService {
 
         // Book 조회 또는 생성
         Book book;
-        if (bookInfo.getAladinId() != null && String.valueOf(bookInfo.getAladinId()).isEmpty()) {
+        if (bookInfo.getAladinId() != null) {
             // Aladin Id가 있는 경우 (ALADIN: 직접 추가)
             book = bookRepository.findByAladinId(String.valueOf(bookInfo.getAladinId()))
                     .orElseGet(() -> createNewMyBook(bookInfo));
@@ -212,10 +212,11 @@ public class MyBookServiceImpl implements MyBookService {
         }
 
         MyBook myBook = myBookBuilder.build();
-        myBookRepository.save(myBook);
 
         // member의 lastBookActionAt 업데이트
         memberRepository.updateLastBookActionAt(memberId, LocalDateTime.now());
+
+        myBookRepository.save(myBook);
 
         return MyBookRes.builder()
                 .mybookId(Math.toIntExact(myBook.getMybookId()))
