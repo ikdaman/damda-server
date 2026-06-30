@@ -299,43 +299,82 @@ public class MyBookServiceImpl implements MyBookService {
         }
 
         // 이유 업데이트
-        myBookReq.getReason().ifPresent(reason -> {
-            if(reason.isBlank()) {
+        if(myBookReq.getReason().isPresent()) {
+            if(myBookReq.getReason().get().isBlank()) {
                 throw new BaseException(MYBOOK_REASON_CANNOT_BE_EMPTY);
             }
-            mybook.updateReason(reason);
-        });
+            mybook.updateReason(myBookReq.getReason().get());
+        }
 
         // historyInfo 업데이트
-        myBookReq.getHistoryInfo().ifPresent(historyInfo -> {
+        if(myBookReq.getHistoryInfo().isPresent()) {
+            UpdateMyBookReq.UpdateHistoryInfo historyInfo = myBookReq.getHistoryInfo().get();
             // startedDate 업데이트
-            historyInfo.getStartedDate().ifPresent(stringDate -> {
-                LocalDateTime startedDate = StringUtils.toLocalDateTime(stringDate);
+            if(historyInfo.getStartedDate().isPresent()) {
+                LocalDateTime startedDate = StringUtils.toLocalDateTime(historyInfo.getStartedDate().get());
                 mybook.updateStartedDate(startedDate);
-            });
+            }
             // finishedDate 업데이트
-            historyInfo.getFinishedDate().ifPresent(stringDate -> {
-                LocalDateTime finishedDate = StringUtils.toLocalDateTime(stringDate);
+            if(historyInfo.getFinishedDate().isPresent()) {
+                LocalDateTime finishedDate = StringUtils.toLocalDateTime(historyInfo.getFinishedDate().get());
                 mybook.updateFinishedDate(finishedDate);
-            });
+            }
             // readingStatus 업데이트
             mybook.updateReadingStatus();
-        });
+        }
 
         // bookInfo 업데이트
         if(mybook.getBook().getSource() == Book.Source.CUSTOM) {
-            myBookReq.getBookInfo().ifPresent(bookInfo -> {
+            if (myBookReq.getBookInfo().isPresent()) {
+                UpdateMyBookReq.UpdateBookInfo bookInfo = myBookReq.getBookInfo().get();
+
                 // title 업데이트
-                bookInfo.getTitle().ifPresent(title -> {
-                    if(title.isBlank()) {
+                if (bookInfo.getTitle().isPresent()) {
+                    String title = bookInfo.getTitle().get();
+                    if (title.isBlank()) {
                         throw new BaseException(BOOK_TITLE_CANNOT_BE_EMPTY);
                     }
                     mybook.getBook().updateTitle(title);
-                });
+                }
+
+                // publisher 업데이트
+                if (bookInfo.getPublisher().isPresent()) {
+                    String publisher = bookInfo.getPublisher().get();
+                    mybook.getBook().updatePublisher(publisher);
+                }
+
+                // publishDate 업데이트
+                if (bookInfo.getPublishDate().isPresent()) {
+                    String stringDate = bookInfo.getPublishDate().get();
+                    LocalDate publishDate = StringUtils.toLocalDate(stringDate);
+                    LocalDateTime publishedDateTime = null;
+
+                    if (publishDate != null) {
+                        publishedDateTime = publishDate.atStartOfDay();
+                    }
+                    mybook.getBook().updatePublishDate(publishedDateTime);
+                }
+
+                // isbn 업데이트
+                if (bookInfo.getIsbn().isPresent()) {
+                    String isbn = bookInfo.getIsbn().get();
+                    mybook.getBook().updateIsbn(isbn);
+                }
+
+                // totalPage 업데이트
+                if (bookInfo.getTotalPage().isPresent()) {
+                    Integer totalPage = bookInfo.getTotalPage().get();
+
+                    if (totalPage != null && totalPage < 0) {
+                        totalPage = null;
+                    }
+                    mybook.getBook().updateTotalPage(totalPage);
+                }
 
                 // author 업데이트
-                bookInfo.getAuthor().ifPresent(author -> {
-                    // Writer 조회 또는 생성
+                if (bookInfo.getAuthor().isPresent()) {
+                    String author = bookInfo.getAuthor().get();
+
                     Writer writer = writerRepository.findByWriterName(author)
                             .orElseGet(() -> writerRepository.save(
                                     Writer.builder()
@@ -350,38 +389,14 @@ public class MyBookServiceImpl implements MyBookService {
                                 .writer(writer)
                                 .build());
                     }
-                });
-
-                // publisher 업데이트
-                bookInfo.getPublisher().ifPresent(publisher -> mybook.getBook().updatePublisher(publisher));
-                // publishDate 업데이트
-                bookInfo.getPublishDate().ifPresent(stringDate -> {
-                    LocalDate publishDate = StringUtils.toLocalDate(stringDate);
-                    LocalDateTime publishedDateTime = null;
-
-                    if(publishDate != null) {
-                        publishedDateTime = publishDate.atStartOfDay();
-                    }
-
-                    mybook.getBook().updatePublishDate(publishedDateTime);
-                });
-                // isbn 업데이트
-                bookInfo.getIsbn().ifPresent(isbn -> mybook.getBook().updateIsbn(isbn));
-                // totalPage 업데이트
-                bookInfo.getTotalPage().ifPresent(totalPage -> {
-                    Integer page = null;
-                    if(totalPage > 0) {
-                        page = totalPage;
-                    }
-                    mybook.getBook().updateTotalPage(page);
-                });
-            });
+                }
+            }
         }
-
-        myBookRepository.save(mybook);
 
         // member의 lastBookActionAt 업데이트
         memberRepository.updateLastBookActionAt(member.getMemberId(), LocalDateTime.now());
+
+        myBookRepository.save(mybook);
 
         return mybook.getMybookId();
     }
@@ -406,10 +421,10 @@ public class MyBookServiceImpl implements MyBookService {
 
         // readingStatus 업데이트
         mybook.updateReadingStatus();
-        myBookRepository.save(mybook);
 
         // member의 lastBookActionAt 업데이트
         memberRepository.updateLastBookActionAt(member.getMemberId(), LocalDateTime.now());
+        myBookRepository.save(mybook);
 
         return mybook.getMybookId();
     }

@@ -52,6 +52,9 @@ dependencies {
 
 	// Gson
 	implementation 'com.google.code.gson:gson'
+    // JsonNullable
+    implementation 'org.openapitools:jackson-databind-nullable:0.2.5'
+
 
 	// Goolge OAuth2
 	implementation 'com.google.api-client:google-api-client:2.8.0'
