@@ -23,7 +23,7 @@ public interface MemberRepository extends JpaRepository<Member, UUID> {
     Optional<Member> findByMemberIdAndStatus(UUID memberId, Member.Status status);
     Boolean existsByNicknameAndStatus(String nickname, Member.Status status);
     Optional<Member> findByNicknameAndStatusIs(String nickname, Member.Status status);
-    @Modifying(clearAutomatically = true)
+    @Modifying
     @Query("UPDATE Member m SET m.lastBookActionAt = :now WHERE m.memberId = :memberId")
     void updateLastBookActionAt(@Param("memberId") UUID memberId, @Param("now") LocalDateTime now);
     @Query("""
