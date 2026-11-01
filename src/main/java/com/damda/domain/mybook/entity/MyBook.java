@@ -38,9 +38,8 @@ public class MyBook extends BaseTime {
     private String reason;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "reading_status", nullable = false)
-    @Builder.Default
-    private ReadingStatus readingStatus = ReadingStatus.TODO;
+    @Column(name = "reading_status")
+    private ReadingStatus readingStatus;
 
     @Column(name = "started_date")
     private LocalDateTime startedDate;
@@ -119,5 +118,9 @@ public class MyBook extends BaseTime {
         } else {
             this.readingStatus = ReadingStatus.DONE;
         }
+    }
+
+    public void updateReadingStatus(ReadingStatus readingStatus) {
+        this.readingStatus = readingStatus;
     }
 }

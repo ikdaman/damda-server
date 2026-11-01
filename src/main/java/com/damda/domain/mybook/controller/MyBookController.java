@@ -16,7 +16,9 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * 나의 책 컨트롤러
@@ -116,6 +118,65 @@ public class MyBookController {
     public ResponseEntity<MyBookDetailRes> getMyBookDetail(@AuthenticationPrincipal AuthMember authMember,
                                                            @PathVariable Long mybookId) {
         MyBookDetailRes res = myBookService.getMyBookDetail(authMember.getMember().getMemberId(), mybookId);
+        return ResponseEntity.ok(res);
+    }
+
+    /**
+     * 기록 추가
+     * @param authMember Spring Security에서 인증된 회원 정보
+     * @param mybookId 나의 책 ID
+     * @return 나의 책 상세 정보
+     */
+    @PostMapping("/{mybookId}/records")
+    public ResponseEntity<Map> addRecord(@AuthenticationPrincipal AuthMember authMember,
+                                                     @PathVariable Long mybookId,
+                                                     @RequestBody RecordReq recordReq) {
+        Map res = myBookService.addRecord(authMember.getMember().getMemberId(), mybookId, recordReq);
+        return ResponseEntity.status(HttpStatus.CREATED).body(res);
+    }
+
+    /**
+     * 기록 조회
+     * @param authMember Spring Security에서 인증된 회원 정보
+     * @param mybookId 나의 책 ID
+     * @param recordId 기록 ID
+     * @return 나의 책 상세 정보
+     */
+    @GetMapping("/{mybookId}/records/{recordId}")
+    public ResponseEntity<RecordRes> getRecord(@AuthenticationPrincipal AuthMember authMember,
+                                               @PathVariable Long mybookId,
+                                               @PathVariable Long recordId) {
+        RecordRes res = myBookService.getRecord(authMember.getMember().getMemberId(), mybookId, recordId);
+
+        return ResponseEntity.ok(res);
+    }
+
+    /**
+     * 기록 삭제
+     * @param authMember Spring Security에서 인증된 회원 정보
+     * @param mybookId 나의 책 ID
+     * @param recordId 기록 ID
+     * @return 나의 책 상세 정보
+     */
+    @DeleteMapping("/{mybookId}/records/{recordId}")
+    public ResponseEntity<Void> deleteRecord(@AuthenticationPrincipal AuthMember authMember,
+                                                @PathVariable Long mybookId,
+                                                @PathVariable Long recordId) {
+            myBookService.deleteRecord(authMember.getMember().getMemberId(), mybookId, recordId);
+            return ResponseEntity.status(HttpStatus.RESET_CONTENT).build();
+    }
+
+    /**
+     * 독서카드 뒷면 조회 - 기록 전체 조회
+     * @param authMember Spring Security에서 인증된 회원 정보
+     * @param mybookId 나의 책 ID
+     * @return 나의 책 상세 정보
+     */
+    @GetMapping("/{mybookId}/records")
+    public ResponseEntity<List<RecordRes>> getAllRecords(@AuthenticationPrincipal AuthMember authMember,
+                                                         @PathVariable Long mybookId) {
+        List<RecordRes> res = myBookService.getAllRecords(authMember.getMember().getMemberId(), mybookId);
+
         return ResponseEntity.ok(res);
     }
 }
