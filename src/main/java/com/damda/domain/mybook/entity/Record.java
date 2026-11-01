@@ -10,10 +10,11 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Builder
 @DynamicInsert
 @DynamicUpdate
 public class Record extends BaseTime {
@@ -34,17 +35,34 @@ public class Record extends BaseTime {
     @Column(nullable = false)
     private RecordType recordType;
 
+    @Column(nullable = false)
+    private LocalDateTime recordDate;
+
     public enum RecordType {
         INPROGRESS, TODO, DONE,
-        BUY, LEND, GIFT, EBOOK, SENTENCE, TALK, REMIND, PRESENT, BORROW, REREAD,
-        FREE
+        BUY, LEND, GIFT, EBOOK,
+        SENTENCE, TALK, REMIND, PRESENT, BORROW, REREAD,
+        FREE;
+
+        public enum READING_STATUS {
+            TODO, INPROGRESS, DONE
+        }
+
+        public enum GET_STATUS {
+            BUY, LEND, GIFT, EBOOK
+        }
+
+        public enum MOMENT_STATUS {
+            SENTENCE, TALK, REMIND, PRESENT, BORROW, REREAD
+        }
     }
 
     @Builder
-    public Record(Long recordId, MyBook myBook, String memo, RecordType recordType) {
+    public Record(Long recordId, MyBook myBook, String memo, RecordType recordType, LocalDateTime recordDate) {
         this.recordId = recordId;
         this.myBook = myBook;
         this.memo = memo;
         this.recordType = recordType;
+        this.recordDate = recordDate;
     }
 }
