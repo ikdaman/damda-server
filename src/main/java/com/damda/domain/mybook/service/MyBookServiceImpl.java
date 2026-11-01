@@ -565,4 +565,15 @@ public class MyBookServiceImpl implements MyBookService {
 
         return response;
     }
+
+    @Override
+    @Transactional
+    public void deleteRecord(UUID memberId, Long mybookId, Long recordId) {
+        MyBook myBook = getMyBookIfOwner(mybookId, memberId);
+
+        Record record = recordRepository.findByRecordIdAndMyBook(recordId, myBook)
+                .orElseThrow(() -> new BaseException(NOT_FOUND_RECORD));
+
+        recordRepository.delete(record);
+    }
 }

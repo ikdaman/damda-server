@@ -45,4 +45,9 @@ public interface MyBookService {
      * 기록 조회
      */
     RecordRes getRecord(UUID memberId, Long mybookId, Long recordId);
+
+    /*
+     * 기록 삭제
+     */
+    void deleteRecord(UUID memberId, Long mybookId, Long recordId);
 }

@@ -149,4 +149,19 @@ public class MyBookController {
 
         return ResponseEntity.ok(res);
     }
+
+    /**
+     * 기록 삭제
+     * @param authMember Spring Security에서 인증된 회원 정보
+     * @param mybookId 나의 책 ID
+     * @param recordId 기록 ID
+     * @return 나의 책 상세 정보
+     */
+    @DeleteMapping("/{mybookId}/records/{recordId}")
+    public ResponseEntity<Void> deleteRecord(@AuthenticationPrincipal AuthMember authMember,
+                                                @PathVariable Long mybookId,
+                                                @PathVariable Long recordId) {
+            myBookService.deleteRecord(authMember.getMember().getMemberId(), mybookId, recordId);
+            return ResponseEntity.status(HttpStatus.RESET_CONTENT).build();
+        }
 }
