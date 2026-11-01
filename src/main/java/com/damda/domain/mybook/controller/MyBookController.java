@@ -133,4 +133,20 @@ public class MyBookController {
         Map res = myBookService.addRecord(authMember.getMember().getMemberId(), mybookId, recordReq);
         return ResponseEntity.status(HttpStatus.CREATED).body(res);
     }
+
+    /**
+     * 기록 조회
+     * @param authMember Spring Security에서 인증된 회원 정보
+     * @param mybookId 나의 책 ID
+     * @param recordId 기록 ID
+     * @return 나의 책 상세 정보
+     */
+    @GetMapping("/{mybookId}/records/{recordId}")
+    public ResponseEntity<RecordRes> getRecord(@AuthenticationPrincipal AuthMember authMember,
+                                               @PathVariable Long mybookId,
+                                               @PathVariable Long recordId) {
+        RecordRes res = myBookService.getRecord(authMember.getMember().getMemberId(), mybookId, recordId);
+
+        return ResponseEntity.ok(res);
+    }
 }

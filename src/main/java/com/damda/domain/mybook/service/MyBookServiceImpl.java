@@ -548,4 +548,21 @@ public class MyBookServiceImpl implements MyBookService {
 
         return Map.of("recordId", savedRecord.getRecordId());
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public RecordRes getRecord(UUID memberId, Long mybookId, Long recordId) {
+        MyBook myBook = getMyBookIfOwner(mybookId, memberId);
+
+        Record record = recordRepository.findByRecordIdAndMyBook(recordId, myBook)
+                .orElseThrow(() -> new BaseException(NOT_FOUND_RECORD));
+
+        RecordRes response = RecordRes.builder()
+                .memo(record.getMemo())
+                .recordType(record.getRecordType().name())
+                .recordDate(record.getRecordDate().format(DATE_FORMATTER))
+                .build();
+
+        return response;
+    }
 }

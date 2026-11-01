@@ -40,4 +40,9 @@ public interface MyBookService {
      * 기록 추가
      */
     Map<String, Long> addRecord(UUID memberId, Long mybookId, RecordReq recordReq);
+
+    /*
+     * 기록 조회
+     */
+    RecordRes getRecord(UUID memberId, Long mybookId, Long recordId);
 }
