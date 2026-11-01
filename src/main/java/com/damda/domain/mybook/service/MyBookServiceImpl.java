@@ -442,13 +442,8 @@ public class MyBookServiceImpl implements MyBookService {
     @Override
     @Transactional(readOnly = true)
     public MyBookDetailRes getMyBookDetail(UUID memberId, Long mybookId) {
-
         // 1. 나의 책 조회 (회원 소유 확인 포함)
-        MyBook myBook = myBookRepository.findByMybookIdAndMemberId(mybookId, memberId)
-                .orElseThrow(() -> {
-//                    log.warn("나의 책 조회 실패: mybookId={}, memberId={}", mybookId, memberId);
-                    return new BaseException(BOOK_NOT_OWNED_BY_MEMBER);
-                });
+        MyBook myBook = getMyBookIfOwner(mybookId, memberId);
         Book book = myBook.getBook();
 
         // 2. 작가명 리스트 생성 (콤마로 구분)
@@ -457,46 +452,20 @@ public class MyBookServiceImpl implements MyBookService {
                 .map(author -> author.getWriter().getWriterName())
                 .collect(Collectors.joining(", "));
 
-        // 3. BookInfo 생성
-        MyBookDetailRes.BookInfo bookInfo = MyBookDetailRes.BookInfo.builder()
-                .bookId(String.valueOf(book.getBookId()))
-                .source(book.getSource().name())  // ALADIN or CUSTOM
+        // 3. MyBookDetailRes 생성
+        MyBookDetailRes response = MyBookDetailRes.builder()
+                .myBookId(myBook.getMybookId())
                 .title(book.getTitle())
                 .author(authorNames)
                 .coverImage(book.getCoverImage())
                 .publisher(book.getPublisher())
-                .totalPage(book.getTotalPage())
-                .publishDate(book.getPublishDate() != null
-                        ? book.getPublishDate().format(DATE_FORMATTER)
-                        : null)
-                .isbn(book.getIsbn())
                 .aladinId(book.getAladinId())
-                .description(book.getDescription())
-                .build();
-
-        // 4. HistoryInfo 생성
-        MyBookDetailRes.HistoryInfo historyInfo = MyBookDetailRes.HistoryInfo.builder()
-                .startedDate(myBook.getStartedDate() != null
-                        ? myBook.getStartedDate().format(DATE_FORMATTER)
-                        : null)
-                .finishedDate(myBook.getFinishedDate() != null
-                        ? myBook.getFinishedDate().format(DATE_FORMATTER)
-                        : null)
-                .build();
-
-        // 5. MyBookDetailRes 생성
-        MyBookDetailRes response = MyBookDetailRes.builder()
-                .bookInfo(bookInfo)
-                .historyInfo(historyInfo)
-                .mybookId(String.valueOf(myBook.getMybookId()))
-                .readingStatus(myBook.getReadingStatus().name())  // TODO, INPROGRESS, DONE
-                .shelfType(myBook.getShelfType())  // STORE or HISTORY
-                .createdDate(myBook.getCreatedAt().format(DATE_FORMATTER))
+                .totalRecords(recordRepository.countByMyBook(myBook))
                 .reason(myBook.getReason())
+                .readingStatus(myBook.getReadingStatus().name())
+                .createdDate(myBook.getCreatedAt().format(DATE_FORMATTER))
                 .build();
 
-//        log.info("나의 책 조회 완료: mybookId={}, memberId={}, shelfType={}",
-//                mybookId, memberId, response.getShelfType());
         return response;
     }
 

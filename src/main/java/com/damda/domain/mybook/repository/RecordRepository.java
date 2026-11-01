@@ -10,5 +10,8 @@ import java.util.Optional;
 public interface RecordRepository extends JpaRepository<Record, Long> {
 
     Optional<Record> findByRecordIdAndMyBook(Long recordId, MyBook myBook);
+
     List<Record> findAllByMyBookOrderByRecordDateDesc(MyBook myBook);
+
+    Long countByMyBook(MyBook myBook);
 }
