@@ -11,6 +11,7 @@ import com.damda.domain.member.repository.MemberRepository;
 import com.damda.domain.mybook.entity.MyBook;
 import com.damda.domain.mybook.model.*;
 import com.damda.domain.mybook.repository.MyBookRepository;
+import com.damda.domain.mybook.repository.RecordRepository;
 import com.damda.global.exception.BaseException;
 import com.damda.global.util.StringUtils;
 import lombok.RequiredArgsConstructor;
@@ -19,11 +20,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.damda.domain.mybook.entity.Record;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -42,6 +45,7 @@ public class MyBookServiceImpl implements MyBookService {
     private final BookRepository bookRepository;
     private final WriterRepository writerRepository;
     private final MemberRepository memberRepository;
+    private final RecordRepository recordRepository;
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_DATE_TIME;
 
 
@@ -438,13 +442,8 @@ public class MyBookServiceImpl implements MyBookService {
     @Override
     @Transactional(readOnly = true)
     public MyBookDetailRes getMyBookDetail(UUID memberId, Long mybookId) {
-
         // 1. 나의 책 조회 (회원 소유 확인 포함)
-        MyBook myBook = myBookRepository.findByMybookIdAndMemberId(mybookId, memberId)
-                .orElseThrow(() -> {
-//                    log.warn("나의 책 조회 실패: mybookId={}, memberId={}", mybookId, memberId);
-                    return new BaseException(BOOK_NOT_OWNED_BY_MEMBER);
-                });
+        MyBook myBook = getMyBookIfOwner(mybookId, memberId);
         Book book = myBook.getBook();
 
         // 2. 작가명 리스트 생성 (콤마로 구분)
@@ -453,46 +452,20 @@ public class MyBookServiceImpl implements MyBookService {
                 .map(author -> author.getWriter().getWriterName())
                 .collect(Collectors.joining(", "));
 
-        // 3. BookInfo 생성
-        MyBookDetailRes.BookInfo bookInfo = MyBookDetailRes.BookInfo.builder()
-                .bookId(String.valueOf(book.getBookId()))
-                .source(book.getSource().name())  // ALADIN or CUSTOM
+        // 3. MyBookDetailRes 생성
+        MyBookDetailRes response = MyBookDetailRes.builder()
+                .myBookId(myBook.getMybookId())
                 .title(book.getTitle())
                 .author(authorNames)
                 .coverImage(book.getCoverImage())
                 .publisher(book.getPublisher())
-                .totalPage(book.getTotalPage())
-                .publishDate(book.getPublishDate() != null
-                        ? book.getPublishDate().format(DATE_FORMATTER)
-                        : null)
-                .isbn(book.getIsbn())
                 .aladinId(book.getAladinId())
-                .description(book.getDescription())
-                .build();
-
-        // 4. HistoryInfo 생성
-        MyBookDetailRes.HistoryInfo historyInfo = MyBookDetailRes.HistoryInfo.builder()
-                .startedDate(myBook.getStartedDate() != null
-                        ? myBook.getStartedDate().format(DATE_FORMATTER)
-                        : null)
-                .finishedDate(myBook.getFinishedDate() != null
-                        ? myBook.getFinishedDate().format(DATE_FORMATTER)
-                        : null)
-                .build();
-
-        // 5. MyBookDetailRes 생성
-        MyBookDetailRes response = MyBookDetailRes.builder()
-                .bookInfo(bookInfo)
-                .historyInfo(historyInfo)
-                .mybookId(String.valueOf(myBook.getMybookId()))
-                .readingStatus(myBook.getReadingStatus().name())  // TODO, INPROGRESS, DONE
-                .shelfType(myBook.getShelfType())  // STORE or HISTORY
-                .createdDate(myBook.getCreatedAt().format(DATE_FORMATTER))
+                .totalRecords(recordRepository.countByMyBook(myBook))
                 .reason(myBook.getReason())
+                .readingStatus(myBook.getReadingStatus().name())
+                .createdDate(myBook.getCreatedAt().format(DATE_FORMATTER))
                 .build();
 
-//        log.info("나의 책 조회 완료: mybookId={}, memberId={}, shelfType={}",
-//                mybookId, memberId, response.getShelfType());
         return response;
     }
 
@@ -509,5 +482,92 @@ public class MyBookServiceImpl implements MyBookService {
             throw new BaseException(BOOK_NOT_OWNED_BY_MEMBER);
         }
         return myBook;
+    }
+
+
+    @Override
+    @Transactional
+    public Map<String, Long> addRecord(UUID memberId, Long mybookId, RecordReq recordReq) {
+        MyBook myBook = getMyBookIfOwner(mybookId, memberId);
+
+        Record.RecordType recordType = Record.RecordType.valueOf(recordReq.getRecordType());
+
+        if(Record.RecordType.isReadingStatus(recordType)) {
+            // 독서 상태 변경
+            MyBook.ReadingStatus readingStatus = MyBook.ReadingStatus.valueOf(recordReq.getRecordType());
+            myBook.updateReadingStatus(readingStatus);
+
+            // 독서 상태가 TODO로 변경될 경우, 이유를 업데이트
+            if(readingStatus == MyBook.ReadingStatus.TODO) {
+                myBook.updateReason(recordReq.getMemo());
+            }
+        }
+
+        if(recordType == Record.RecordType.FREE) {
+            // FREE 타입의 경우 MEMO가 필수
+            if(recordReq.getMemo() == null || recordReq.getMemo().isBlank()) {
+                throw new BaseException(MEMO_CANNOT_BE_EMPTY_FOR_FREE_RECORD);
+            }
+        }
+
+        Record record = Record.builder()
+                .myBook(myBook)
+                .memo(recordReq.getMemo())
+                .recordType(recordType)
+                .recordDate(recordReq.getRecordDate())
+                .build();
+
+        myBookRepository.save(myBook); // myBook 저장 (독서 상태 변경 시 필요)
+        Record savedRecord = recordRepository.save(record);
+
+        return Map.of("recordId", savedRecord.getRecordId());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public RecordRes getRecord(UUID memberId, Long mybookId, Long recordId) {
+        MyBook myBook = getMyBookIfOwner(mybookId, memberId);
+
+        Record record = recordRepository.findByRecordIdAndMyBook(recordId, myBook)
+                .orElseThrow(() -> new BaseException(NOT_FOUND_RECORD));
+
+        RecordRes response = RecordRes.builder()
+                .memo(record.getMemo())
+                .recordType(record.getRecordType().name())
+                .recordDate(record.getRecordDate().format(DATE_FORMATTER))
+                .build();
+
+        return response;
+    }
+
+    @Override
+    @Transactional
+    public void deleteRecord(UUID memberId, Long mybookId, Long recordId) {
+        MyBook myBook = getMyBookIfOwner(mybookId, memberId);
+
+        Record record = recordRepository.findByRecordIdAndMyBook(recordId, myBook)
+                .orElseThrow(() -> new BaseException(NOT_FOUND_RECORD));
+
+        recordRepository.delete(record);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<RecordRes> getAllRecords(UUID memberId, Long mybookId) {
+        MyBook myBook = getMyBookIfOwner(mybookId, memberId);
+
+        // TODO: 페이징 정책 결정 후 페이징 처리 필요
+        List<Record> records = recordRepository.findAllByMyBookOrderByRecordDateDesc(myBook);
+
+        List<RecordRes> response = records.stream()
+                .map(record -> RecordRes.builder()
+                        .recordId(record.getRecordId())
+                        .memo(record.getMemo())
+                        .recordType(record.getRecordType().name())
+                        .recordDate(record.getRecordDate().format(DATE_FORMATTER))
+                        .build())
+                .collect(Collectors.toList());
+
+        return response;
     }
 }
