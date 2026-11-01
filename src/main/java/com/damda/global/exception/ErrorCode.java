@@ -16,6 +16,7 @@ public enum ErrorCode {
     // common(00)
     BAD_REQUEST_BY_VALIDATION(HttpStatus.BAD_REQUEST.value(), 4000001, "유효하지 않은 값입니다."),
     BAD_REQUEST_INVALID_DATE_FORMAT(HttpStatus.BAD_REQUEST.value(), 4000002, "날짜 형식이 올바르지 않습니다."),
+    MEMO_CANNOT_BE_EMPTY_FOR_FREE_RECORD(HttpStatus.BAD_REQUEST.value(), 4000003, "자유 기록의 메모는 필수 값입니다."),
 
     /**
      * 401 Unauthorized
@@ -72,6 +73,7 @@ public enum ErrorCode {
     NOT_FOUND_BOOK(HttpStatus.NOT_FOUND.value(), 4040301, "해당하는 책의 정보가 존재하지 않습니다."),
     NOT_FOUND_AUTHOR(HttpStatus.NOT_FOUND.value(), 4040302, "해당하는 작가의 정보가 존재하지 않습니다."),
     EMPTY_IMPRESSION(HttpStatus.BAD_REQUEST.value(), 4040303, "첫인상을 입력해주세요."),
+    NOT_FOUND_RECORD(HttpStatus.NOT_FOUND.value(), 4040304, "해당하는 기록이 존재하지 않습니다."),
 
     // Notice(04)
     NOT_FOUND_NOTICE(HttpStatus.NOT_FOUND.value(), 4040301, "해당하는 공지사항이 존재하지 않습니다."),
