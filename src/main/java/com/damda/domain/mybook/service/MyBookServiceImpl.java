@@ -496,6 +496,11 @@ public class MyBookServiceImpl implements MyBookService {
             // 독서 상태 변경
             MyBook.ReadingStatus readingStatus = MyBook.ReadingStatus.valueOf(recordReq.getRecordType());
             myBook.updateReadingStatus(readingStatus);
+
+            // 독서 상태가 TODO로 변경될 경우, 이유를 업데이트
+            if(readingStatus == MyBook.ReadingStatus.TODO) {
+                myBook.updateReason(recordReq.getMemo());
+            }
         }
 
         if(recordType == Record.RecordType.FREE) {
