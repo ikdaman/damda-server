@@ -44,6 +44,8 @@ public enum ErrorCode {
 
     // Notice(04)
 
+    // Collection(05)
+    COLLECTION_NAME_CANNOT_BE_EMPTY(HttpStatus.BAD_REQUEST.value(), 4000501, "컬렉션 이름은 필수 값입니다."),
 
     /**
      * 404 Not found
@@ -74,6 +76,12 @@ public enum ErrorCode {
     // Notice(04)
     NOT_FOUND_NOTICE(HttpStatus.NOT_FOUND.value(), 4040301, "해당하는 공지사항이 존재하지 않습니다."),
 
+    // Collection(05)
+    NOT_FOUND_COLLECTION(HttpStatus.NOT_FOUND.value(), 4040501, "해당하는 컬렉션이 존재하지 않습니다."),
+    NOT_FOUND_COLLECTION_BOOK(HttpStatus.NOT_FOUND.value(), 4040503, "해당하는 컬렉션 책이 존재하지 않습니다."),
+    NOT_FOUND_COLLECTION_NAME(HttpStatus.NOT_FOUND.value(), 4040502, "해당하는 컬렉션 이름이 존재하지 않습니다."),
+    INVALID_COLLECTION_BOOK_REQUEST(HttpStatus.BAD_REQUEST.value(), 4000501, "해당하는 책의 정보가 존재하지 않습니다."),
+
     /**
      * 409 Conflict
      */
@@ -87,6 +95,11 @@ public enum ErrorCode {
     MY_BOOK_ALREADY_EXISTS(HttpStatus.CONFLICT.value(), 4090302, "이미 가지고 있는 책이에요!"),
 
     // Notice(04)
+
+    // Collection(05)
+    COLLECTION_ALREADY_EXISTS(HttpStatus.CONFLICT.value(), 4090501, "이미 가지고 있는 컬렉션이에요!"),
+    ALREADY_IN_COLLECTION(HttpStatus.CONFLICT.value(), 4090502, "이미 이 컬렉션에 담긴 책이에요"),
+    COLLECTION_FULL(HttpStatus.CONFLICT.value(), 4090503, "컬렉션이 가득 찼어요!"),
 
     /**
      * 500 Internal Server Error
