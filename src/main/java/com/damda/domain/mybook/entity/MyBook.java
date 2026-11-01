@@ -38,7 +38,7 @@ public class MyBook extends BaseTime {
     private String reason;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "reading_status", nullable = false)
+    @Column(name = "reading_status")
     @Builder.Default
     private ReadingStatus readingStatus = ReadingStatus.TODO;
 
