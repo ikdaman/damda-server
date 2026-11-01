@@ -576,4 +576,24 @@ public class MyBookServiceImpl implements MyBookService {
 
         recordRepository.delete(record);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<RecordRes> getAllRecords(UUID memberId, Long mybookId) {
+        MyBook myBook = getMyBookIfOwner(mybookId, memberId);
+
+        // TODO: 페이징 정책 결정 후 페이징 처리 필요
+        List<Record> records = recordRepository.findAllByMyBookOrderByRecordDateDesc(myBook);
+
+        List<RecordRes> response = records.stream()
+                .map(record -> RecordRes.builder()
+                        .recordId(record.getRecordId())
+                        .memo(record.getMemo())
+                        .recordType(record.getRecordType().name())
+                        .recordDate(record.getRecordDate().format(DATE_FORMATTER))
+                        .build())
+                .collect(Collectors.toList());
+
+        return response;
+    }
 }

@@ -16,6 +16,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -163,5 +164,19 @@ public class MyBookController {
                                                 @PathVariable Long recordId) {
             myBookService.deleteRecord(authMember.getMember().getMemberId(), mybookId, recordId);
             return ResponseEntity.status(HttpStatus.RESET_CONTENT).build();
-        }
+    }
+
+    /**
+     * 독서카드 뒷면 조회 - 기록 전체 조회
+     * @param authMember Spring Security에서 인증된 회원 정보
+     * @param mybookId 나의 책 ID
+     * @return 나의 책 상세 정보
+     */
+    @GetMapping("/{mybookId}/records")
+    public ResponseEntity<List<RecordRes>> getAllRecords(@AuthenticationPrincipal AuthMember authMember,
+                                                         @PathVariable Long mybookId) {
+        List<RecordRes> res = myBookService.getAllRecords(authMember.getMember().getMemberId(), mybookId);
+
+        return ResponseEntity.ok(res);
+    }
 }

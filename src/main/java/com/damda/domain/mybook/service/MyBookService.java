@@ -4,6 +4,7 @@ import com.damda.domain.member.entity.Member;
 import com.damda.domain.mybook.model.*;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -50,4 +51,9 @@ public interface MyBookService {
      * 기록 삭제
      */
     void deleteRecord(UUID memberId, Long mybookId, Long recordId);
+
+    /*
+     * 기록 전체 조회
+     */
+    List<RecordRes> getAllRecords(UUID memberId, Long mybookId);
 }
