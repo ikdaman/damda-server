@@ -11,6 +11,7 @@ import com.damda.domain.member.repository.MemberRepository;
 import com.damda.domain.mybook.entity.MyBook;
 import com.damda.domain.mybook.model.*;
 import com.damda.domain.mybook.repository.MyBookRepository;
+import com.damda.domain.mybook.repository.RecordRepository;
 import com.damda.global.exception.BaseException;
 import com.damda.global.util.StringUtils;
 import lombok.RequiredArgsConstructor;
@@ -19,11 +20,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.damda.domain.mybook.entity.Record;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -42,6 +45,7 @@ public class MyBookServiceImpl implements MyBookService {
     private final BookRepository bookRepository;
     private final WriterRepository writerRepository;
     private final MemberRepository memberRepository;
+    private final RecordRepository recordRepository;
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_DATE_TIME;
 
 
@@ -509,5 +513,39 @@ public class MyBookServiceImpl implements MyBookService {
             throw new BaseException(BOOK_NOT_OWNED_BY_MEMBER);
         }
         return myBook;
+    }
+
+
+    @Override
+    @Transactional
+    public Map<String, Long> addRecord(UUID memberId, Long mybookId, RecordReq recordReq) {
+        MyBook myBook = getMyBookIfOwner(mybookId, memberId);
+
+        Record.RecordType recordType = Record.RecordType.valueOf(recordReq.getRecordType());
+
+        if(Record.RecordType.isReadingStatus(recordType)) {
+            // 독서 상태 변경
+            MyBook.ReadingStatus readingStatus = MyBook.ReadingStatus.valueOf(recordReq.getRecordType());
+            myBook.updateReadingStatus(readingStatus);
+        }
+
+        if(recordType == Record.RecordType.FREE) {
+            // FREE 타입의 경우 MEMO가 필수
+            if(recordReq.getMemo() == null || recordReq.getMemo().isBlank()) {
+                throw new BaseException(MEMO_CANNOT_BE_EMPTY_FOR_FREE_RECORD);
+            }
+        }
+
+        Record record = Record.builder()
+                .myBook(myBook)
+                .memo(recordReq.getMemo())
+                .recordType(recordType)
+                .recordDate(recordReq.getRecordDate())
+                .build();
+
+        myBookRepository.save(myBook); // myBook 저장 (독서 상태 변경 시 필요)
+        Record savedRecord = recordRepository.save(record);
+
+        return Map.of("recordId", savedRecord.getRecordId());
     }
 }

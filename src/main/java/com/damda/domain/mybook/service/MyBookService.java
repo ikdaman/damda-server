@@ -4,6 +4,7 @@ import com.damda.domain.member.entity.Member;
 import com.damda.domain.mybook.model.*;
 import org.springframework.data.domain.Pageable;
 
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -34,4 +35,9 @@ public interface MyBookService {
      * 내 책 통합 검색
      */
     PageRes<MyBookSearchRes.BookItem> searchMyBooks(Pageable pageable, String query, Member member);
+
+    /*
+     * 기록 추가
+     */
+    Map<String, Long> addRecord(UUID memberId, Long mybookId, RecordReq recordReq);
 }

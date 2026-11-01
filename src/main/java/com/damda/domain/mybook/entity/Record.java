@@ -32,10 +32,10 @@ public class Record extends BaseTime {
     private String memo;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "record_type", nullable = false)
     private RecordType recordType;
 
-    @Column(nullable = false)
+    @Column(name = "record_date", nullable = false)
     private LocalDateTime recordDate;
 
     public enum RecordType {
@@ -54,6 +54,10 @@ public class Record extends BaseTime {
 
         public enum MOMENT_STATUS {
             SENTENCE, TALK, REMIND, PRESENT, BORROW, REREAD
+        }
+
+        public static boolean isReadingStatus(RecordType recordType) {
+            return recordType == INPROGRESS || recordType == TODO || recordType == DONE;
         }
     }
 

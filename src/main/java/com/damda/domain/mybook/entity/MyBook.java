@@ -120,4 +120,8 @@ public class MyBook extends BaseTime {
             this.readingStatus = ReadingStatus.DONE;
         }
     }
+
+    public void updateReadingStatus(ReadingStatus readingStatus) {
+        this.readingStatus = readingStatus;
+    }
 }

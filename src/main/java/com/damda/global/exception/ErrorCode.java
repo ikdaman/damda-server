@@ -16,6 +16,7 @@ public enum ErrorCode {
     // common(00)
     BAD_REQUEST_BY_VALIDATION(HttpStatus.BAD_REQUEST.value(), 4000001, "유효하지 않은 값입니다."),
     BAD_REQUEST_INVALID_DATE_FORMAT(HttpStatus.BAD_REQUEST.value(), 4000002, "날짜 형식이 올바르지 않습니다."),
+    MEMO_CANNOT_BE_EMPTY_FOR_FREE_RECORD(HttpStatus.BAD_REQUEST.value(), 4000003, "자유 기록의 메모는 필수 값입니다."),
 
     /**
      * 401 Unauthorized

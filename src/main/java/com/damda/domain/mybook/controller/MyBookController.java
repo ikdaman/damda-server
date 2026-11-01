@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * 나의 책 컨트롤러
@@ -117,5 +118,19 @@ public class MyBookController {
                                                            @PathVariable Long mybookId) {
         MyBookDetailRes res = myBookService.getMyBookDetail(authMember.getMember().getMemberId(), mybookId);
         return ResponseEntity.ok(res);
+    }
+
+    /**
+     * 기록 추가
+     * @param authMember Spring Security에서 인증된 회원 정보
+     * @param mybookId 나의 책 ID
+     * @return 나의 책 상세 정보
+     */
+    @PostMapping("/{mybookId}/records")
+    public ResponseEntity<Map> addRecord(@AuthenticationPrincipal AuthMember authMember,
+                                                     @PathVariable Long mybookId,
+                                                     @RequestBody RecordReq recordReq) {
+        Map res = myBookService.addRecord(authMember.getMember().getMemberId(), mybookId, recordReq);
+        return ResponseEntity.status(HttpStatus.CREATED).body(res);
     }
 }
