@@ -52,18 +52,18 @@ public class MyBookServiceImpl implements MyBookService {
     @Override
     @Transactional(readOnly = true)
     public PageRes<MyBookStorePageRes.BookItem> getMyBookStore(Pageable pageable, String keyword, Member member) {
-        Page<MyBook> myBooks = myBookRepository.findAllByMemberAndReadingStatusAndKeyword(
-                member,
-                MyBook.ReadingStatus.TODO,
-                keyword,
-                pageable
-        );
+        // TODO: 페이징 정책 결정 후 페이징 처리 필요
+        // 서가: 읽는 상태와 무관하게 저장한 모든 책
+        Page<MyBook> myBooks = myBookRepository.findAllByMemberAndKeyword(member, keyword, pageable);
 
         List<MyBookStorePageRes.BookItem> bookItems = myBooks.getContent().stream()
                 .map(myBook -> MyBookStorePageRes.BookItem.builder()
                         .mybookId(myBook.getMybookId())
                         .createdDate(myBook.getCreatedAt())
-                        .reason(myBook.getReason())
+                        // 띠지: 읽고 싶은 이유가 있는 책에만 값이 있다 (빈 문자열은 null)
+                        .reason(myBook.getReason() == null || myBook.getReason().isBlank()
+                                ? null
+                                : myBook.getReason())
                         .bookInfo(MyBookStorePageRes.BookInfo.builder()
                                 .title(myBook.getBook().getTitle())
                                 .author(myBook.getBook().getAuthor() != null
@@ -73,6 +73,8 @@ public class MyBookServiceImpl implements MyBookService {
                                         : List.of())
                                 .coverImage(myBook.getBook().getCoverImage())
                                 .description(myBook.getBook().getDescription())
+                                // 책등 너비: 페이지 수가 없거나 0 이하면 null
+                                .totalPage(toSpineTotalPage(myBook.getBook().getTotalPage()))
                                 .build())
                         .build())
                 .collect(Collectors.toList());
@@ -83,6 +85,13 @@ public class MyBookServiceImpl implements MyBookService {
                 .totalElements(myBooks.getTotalElements())
                 .books(bookItems)
                 .build();
+    }
+
+    /**
+     * 책등 너비 계산용 페이지 수. 없거나 0 이하면 null (클라이언트가 기본 너비로 그린다)
+     */
+    private Integer toSpineTotalPage(Integer totalPage) {
+        return (totalPage == null || totalPage <= 0) ? null : totalPage;
     }
 
     @Override

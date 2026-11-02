@@ -7,7 +7,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 /**
- * 내 서점 조회 - BookItem 정의
+ * 서가 조회 - BookItem 정의
  */
 @Getter
 @Builder
@@ -29,5 +29,7 @@ public class MyBookStorePageRes {
         private List<String> author;
         private String coverImage;
         private String description;
+        // 책등 너비 계산용 페이지 수
+        private Integer totalPage;
     }
 }

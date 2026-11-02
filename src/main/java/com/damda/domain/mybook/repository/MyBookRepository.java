@@ -44,6 +44,28 @@ public interface MyBookRepository extends JpaRepository<MyBook, Long> {
         Pageable pageable
     );
 
+    /**
+     * 서가 조회: 내가 저장한 모든 책 (읽는 상태 무관, ACTIVE)
+     * - 읽고 싶은 / 읽고 있는 / 읽은 책이 모두 한 서가에 꽂힌다.
+     */
+    @Query(value = "SELECT mb FROM MyBook mb " +
+            "JOIN FETCH mb.book b " +
+            "LEFT JOIN FETCH b.author a " +
+            "LEFT JOIN FETCH a.writer w " +
+            "WHERE mb.member = :member " +
+            "AND mb.status = 'ACTIVE' " +
+            "AND (COALESCE(:keyword, '') = '' OR b.title LIKE CONCAT('%', COALESCE(:keyword, ''), '%'))",
+            countQuery = "SELECT COUNT(mb) FROM MyBook mb " +
+                    "JOIN mb.book b " +
+                    "WHERE mb.member = :member " +
+                    "AND mb.status = 'ACTIVE' " +
+                    "AND (COALESCE(:keyword, '') = '' OR b.title LIKE CONCAT('%', COALESCE(:keyword, ''), '%'))")
+    Page<MyBook> findAllByMemberAndKeyword(
+            @Param("member") Member member,
+            @Param("keyword") String keyword,
+            Pageable pageable
+    );
+
     @Query(value = "SELECT mb FROM MyBook mb " +
            "JOIN FETCH mb.book b " +
            "LEFT JOIN FETCH b.author a " +
