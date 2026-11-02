@@ -14,6 +14,10 @@ import org.springframework.web.bind.annotation.*;
 
 /**
  * 컬렉션 컨트롤러
+ *
+ * 책을 담고 빼는 건별 API 는 두지 않는다.
+ * 편집 화면에서 담기/빼기/이름 수정을 모두 끝낸 뒤 '완료'를 눌렀을 때,
+ * 최종 상태를 한 번의 요청(생성 POST / 수정 PUT)으로 저장한다.
  */
 @RestController
 @RequestMapping("/collections")
@@ -49,75 +53,32 @@ public class CollectionController {
     }
 
     /**
-     * 컬렉션 만들기 (정책서 2-4)
+     * 컬렉션 만들기 (정책서 2-4, 2-5)
      * POST /collections
+     * - 이름 + 최종 책 목록(선택)을 한 번에 저장한다. 응답은 만들어진 컬렉션의 상세(9칸).
      */
     @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<CollectionRes> createCollection(
+    public ResponseEntity<CollectionDetailRes> createCollection(
             @Valid @RequestBody CollectionReq dto,
             @AuthenticationPrincipal AuthMember authMember
     ) {
-        CollectionRes res = collectionService.createCollection(authMember.getMember().getMemberId(), dto);
+        CollectionDetailRes res = collectionService.createCollection(authMember.getMember().getMemberId(), dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(res);
     }
 
     /**
-     * 컬렉션 이름 수정 (정책서 2-5)
-     * PATCH /collections/{collectionId}
+     * 컬렉션 수정 (정책서 2-5 이름 수정 / 책 담기 / 책 빼기)
+     * PUT /collections/{collectionId}
+     * - 편집 완료 시 이름 + 최종 책 목록으로 전체 교체한다. 응답은 수정된 컬렉션의 상세(9칸).
+     * - 서가의 책(나의 책)은 삭제되지 않는다.
      */
-    @PatchMapping("/{collectionId}")
-    public ResponseEntity<CollectionRes> updateCollection(
+    @PutMapping("/{collectionId}")
+    public ResponseEntity<CollectionDetailRes> updateCollection(
             @AuthenticationPrincipal AuthMember authMember,
             @PathVariable Long collectionId,
             @Valid @RequestBody UpdateCollectionReq dto
     ) {
         return ResponseEntity.ok(
                 collectionService.updateCollection(authMember.getMember().getMemberId(), collectionId, dto));
-    }
-
-    /**
-     * 컬렉션에 담기 전 확인 (정책서 2-5)
-     * GET /collections/{collectionId}/books/check?aladinId=123456
-     * - onShelf=true  → 저장 시트 없이 mybookId 로 바로 담기
-     * - onShelf=false → 저장 시트(상태/읽고 싶은 이유/날짜)를 거쳐 bookInfo 로 담기
-     * - alreadyInCollection=true → "이미 이 컬렉션에 담긴 책이에요" 안내
-     */
-    @GetMapping("/{collectionId}/books/check")
-    public ResponseEntity<CollectionBookCheckRes> checkBook(
-            @AuthenticationPrincipal AuthMember authMember,
-            @PathVariable Long collectionId,
-            @RequestParam Integer aladinId
-    ) {
-        return ResponseEntity.ok(
-                collectionService.checkBook(authMember.getMember().getMemberId(), collectionId, aladinId));
-    }
-
-    /**
-     * 컬렉션에 책 담기 (정책서 2-5)
-     * POST /collections/{collectionId}/books
-     */
-    @PostMapping(value = "/{collectionId}/books", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<CollectionBookRes> addBook(
-            @AuthenticationPrincipal AuthMember authMember,
-            @PathVariable Long collectionId,
-            @Valid @RequestBody CollectionBookReq dto
-    ) {
-        CollectionBookRes res = collectionService.addBook(authMember.getMember().getMemberId(), collectionId, dto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(res);
-    }
-
-    /**
-     * 컬렉션에서 책 빼기 (정책서 2-5)
-     * DELETE /collections/{collectionId}/books/{mybookId}
-     * - 서가의 책은 삭제되지 않고, 그 칸만 빈 칸이 된다.
-     */
-    @DeleteMapping("/{collectionId}/books/{mybookId}")
-    public ResponseEntity<Void> removeBook(
-            @AuthenticationPrincipal AuthMember authMember,
-            @PathVariable Long collectionId,
-            @PathVariable Long mybookId
-    ) {
-        collectionService.removeBook(authMember.getMember().getMemberId(), collectionId, mybookId);
-        return ResponseEntity.noContent().build();
     }
 }

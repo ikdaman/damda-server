@@ -9,7 +9,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -44,20 +43,12 @@ public interface CollectionBookRepository extends JpaRepository<CollectionBook, 
     List<CollectionBook> findAllWithBookByMemberId(@Param("memberId") UUID memberId);
 
     /**
-     * 컬렉션에서 이미 사용 중인 칸 번호
+     * 컬렉션에 현재 저장된 연결 (수정 시 최종 목록과 비교용)
      */
-    @Query("SELECT cb.slotNo FROM CollectionBook cb WHERE cb.collection = :collection")
-    List<Integer> findSlotNosByCollection(@Param("collection") Collection collection);
-
-    boolean existsByCollectionAndMybook(Collection collection, MyBook mybook);
-
     @Query("SELECT cb FROM CollectionBook cb " +
-           "WHERE cb.collection = :collection " +
-           "AND cb.mybook.mybookId = :mybookId")
-    Optional<CollectionBook> findByCollectionAndMybookId(
-            @Param("collection") Collection collection,
-            @Param("mybookId") Long mybookId
-    );
+           "JOIN FETCH cb.mybook mb " +
+           "WHERE cb.collection = :collection")
+    List<CollectionBook> findAllByCollection(@Param("collection") Collection collection);
 
     /**
      * 서가에서 삭제된(INACTIVE) 책이 컬렉션에 남긴 연결 정리
@@ -71,18 +62,31 @@ public interface CollectionBookRepository extends JpaRepository<CollectionBook, 
     int deleteInactiveBooks(@Param("collection") Collection collection);
 
     /**
-     * 서가에 이미 있는 책 찾기 (같은 알라딘 ID, ACTIVE)
+     * 내 서가의 책 일괄 조회 (나의 책 ID, ACTIVE, 내 책만) - 요청의 mybookId 항목 확인용
+     */
+    @Query("SELECT mb FROM MyBook mb " +
+           "JOIN FETCH mb.book b " +
+           "WHERE mb.mybookId IN :mybookIds " +
+           "AND mb.member.memberId = :memberId " +
+           "AND mb.status = 'ACTIVE'")
+    List<MyBook> findShelfBooksByIds(
+            @Param("memberId") UUID memberId,
+            @Param("mybookIds") List<Long> mybookIds
+    );
+
+    /**
+     * 내 서가의 책 일괄 조회 (알라딘 ID, ACTIVE) - 요청의 bookInfo 항목이 이미 서가에 있는지 확인용
      * - 같은 책은 서가에 하나만 둘 수 있다. (정책서 3-7)
-     * - 나의 책 쪽에 중복이 남아 있어도 깨지지 않도록 List 로 받아 가장 먼저 저장한 책을 쓴다.
+     * - 나의 책 쪽에 중복이 남아 있어도 깨지지 않도록 호출하는 쪽에서 가장 먼저 저장한 책을 쓴다.
      */
     @Query("SELECT mb FROM MyBook mb " +
            "JOIN FETCH mb.book b " +
            "WHERE mb.member.memberId = :memberId " +
-           "AND b.aladinId = :aladinId " +
+           "AND b.aladinId IN :aladinIds " +
            "AND mb.status = 'ACTIVE' " +
            "ORDER BY mb.createdAt ASC")
-    List<MyBook> findShelfBooksByMemberIdAndAladinId(
+    List<MyBook> findShelfBooksByMemberIdAndAladinIds(
             @Param("memberId") UUID memberId,
-            @Param("aladinId") String aladinId
+            @Param("aladinIds") List<String> aladinIds
     );
 }

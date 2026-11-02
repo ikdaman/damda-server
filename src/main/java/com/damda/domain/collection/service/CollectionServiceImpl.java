@@ -9,7 +9,6 @@ import com.damda.domain.collection.repository.CollectionRepository;
 import com.damda.domain.member.entity.Member;
 import com.damda.domain.member.repository.MemberRepository;
 import com.damda.domain.mybook.entity.MyBook;
-import com.damda.domain.mybook.model.BookInfo;
 import com.damda.domain.mybook.model.MyBookReq;
 import com.damda.domain.mybook.model.MyBookRes;
 import com.damda.domain.mybook.repository.MyBookRepository;
@@ -21,10 +20,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -90,8 +93,194 @@ public class CollectionServiceImpl implements CollectionService {
     @Override
     @Transactional(readOnly = true)
     public CollectionDetailRes getCollectionDetail(UUID memberId, Long collectionId) {
-        Collection collection = getOwnedCollection(memberId, collectionId);
+        Collection collection = collectionRepository.findByCollectionIdAndMemberId(collectionId, memberId)
+                .orElseThrow(() -> new BaseException(NOT_FOUND_COLLECTION));
 
+        return buildDetail(collection);
+    }
+
+    /**
+     * 컬렉션 만들기: 이름 + 최종 책 목록(선택)을 한 번에 저장
+     */
+    @Override
+    @Transactional
+    public CollectionDetailRes createCollection(UUID memberId, CollectionReq req) {
+        String name = normalizeName(req.getName());
+
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new BaseException(NOT_FOUND_USER));
+
+        Collection collection = collectionRepository.save(
+                Collection.builder()
+                        .member(member)
+                        .name(name)
+                        .build());
+
+        if (req.getBooks() != null && !req.getBooks().isEmpty()) {
+            applyBooks(memberId, collection, req.getBooks());
+        }
+
+        return buildDetail(collection);
+    }
+
+    /**
+     * 컬렉션 수정: 이름 + 최종 책 목록으로 전체 교체
+     * - 같은 컬렉션에 대한 수정이 동시에 들어와도 칸이 겹치지 않도록 컬렉션 행을 잠근다.
+     */
+    @Override
+    @Transactional
+    public CollectionDetailRes updateCollection(UUID memberId, Long collectionId, UpdateCollectionReq req) {
+        String name = normalizeName(req.getName());
+
+        Collection collection = collectionRepository
+                .findByCollectionIdAndMemberIdForUpdate(collectionId, memberId)
+                .orElseThrow(() -> new BaseException(NOT_FOUND_COLLECTION));
+
+        collection.updateName(name);
+        applyBooks(memberId, collection, req.getBooks());
+
+        return buildDetail(collection);
+    }
+
+    // ------------------------------------------------------------------
+    // private
+    // ------------------------------------------------------------------
+
+    /**
+     * 최종 책 목록을 컬렉션에 반영한다. (정책서 2-5)
+     *
+     * 1. 모든 검증을 먼저 끝낸다. (하나라도 틀리면 아무것도 저장하지 않는다)
+     *    - 최대 9권, 같은 책 중복 없음, 칸 번호 범위/중복, 내 서가의 책인지
+     * 2. 서가에 없는 책은 서가에 저장한다. (기존 MyBookService.addMyBook 사용)
+     * 3. 칸 배정: slotNo 를 보낸 책은 그 칸, 생략한 책은 맨 앞의 빈 칸부터 요청 순서대로
+     * 4. 기존 연결과 비교해서 바뀐 것만 삭제/추가한다. (그대로인 책은 건드리지 않는다)
+     */
+    private void applyBooks(UUID memberId, Collection collection, List<CollectionBookReq> items) {
+        // 서가에서 삭제된 책이 차지하고 있던 칸 정리
+        collectionBookRepository.deleteInactiveBooks(collection);
+
+        if (items.size() > Collection.MAX_BOOKS) {
+            throw new BaseException(COLLECTION_FULL);
+        }
+
+        // ---- 서가의 책 일괄 조회 (쿼리 2회) ----
+        List<Long> mybookIds = items.stream()
+                .map(CollectionBookReq::getMybookId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        Map<Long, MyBook> shelfById = mybookIds.isEmpty()
+                ? Map.of()
+                : collectionBookRepository.findShelfBooksByIds(memberId, mybookIds).stream()
+                        .collect(Collectors.toMap(MyBook::getMybookId, mb -> mb, (a, b) -> a));
+
+        List<String> aladinIds = items.stream()
+                .filter(item -> item.getMybookId() == null
+                        && item.getBookInfo() != null
+                        && item.getBookInfo().getAladinId() != null)
+                .map(item -> String.valueOf(item.getBookInfo().getAladinId()))
+                .distinct()
+                .toList();
+        Map<String, MyBook> shelfByAladinId = aladinIds.isEmpty()
+                ? Map.of()
+                : collectionBookRepository.findShelfBooksByMemberIdAndAladinIds(memberId, aladinIds).stream()
+                        .collect(Collectors.toMap(mb -> mb.getBook().getAladinId(), mb -> mb, (a, b) -> a));
+
+        // ---- 검증 + 항목별 서가의 책 결정 (null = 서가에 없어 새로 저장해야 함) ----
+        List<MyBook> resolved = new ArrayList<>();
+        Set<Long> usedMybookIds = new HashSet<>();
+        Set<String> newAladinIds = new HashSet<>();
+        Set<Integer> explicitSlots = new HashSet<>();
+
+        for (CollectionBookReq item : items) {
+            MyBook shelfBook;
+            if (item.getMybookId() != null) {
+                shelfBook = shelfById.get(item.getMybookId());
+                if (shelfBook == null) {
+                    throw new BaseException(NOT_FOUND_MY_BOOK);
+                }
+            } else if (item.getBookInfo() != null) {
+                Integer aladinId = item.getBookInfo().getAladinId();
+                shelfBook = aladinId == null ? null : shelfByAladinId.get(String.valueOf(aladinId));
+            } else {
+                throw new BaseException(INVALID_COLLECTION_BOOK_REQUEST);
+            }
+
+            // 같은 컬렉션에는 같은 책을 한 번만 (정책서: "이미 이 컬렉션에 담긴 책이에요")
+            if (shelfBook != null) {
+                if (!usedMybookIds.add(shelfBook.getMybookId())) {
+                    throw new BaseException(ALREADY_IN_COLLECTION);
+                }
+            } else if (item.getBookInfo().getAladinId() != null
+                    && !newAladinIds.add(String.valueOf(item.getBookInfo().getAladinId()))) {
+                throw new BaseException(ALREADY_IN_COLLECTION);
+            }
+
+            Integer slotNo = item.getSlotNo();
+            if (slotNo != null
+                    && (slotNo < 1 || slotNo > Collection.MAX_BOOKS || !explicitSlots.add(slotNo))) {
+                throw new BaseException(INVALID_COLLECTION_BOOK_REQUEST);
+            }
+
+            resolved.add(shelfBook);
+        }
+
+        // ---- 칸 배정: slotNo 가 없는 책은 맨 앞의 빈 칸부터 ----
+        Iterator<Integer> freeSlots = IntStream.rangeClosed(1, Collection.MAX_BOOKS)
+                .filter(n -> !explicitSlots.contains(n))
+                .iterator();
+
+        // ---- 서가에 없는 책 저장 + 최종 (나의 책 ID -> 칸) ----
+        Map<Long, Integer> finalSlots = new LinkedHashMap<>();
+        Map<Long, MyBook> finalBooks = new HashMap<>();
+        for (int i = 0; i < items.size(); i++) {
+            CollectionBookReq item = items.get(i);
+            MyBook myBook = resolved.get(i) != null ? resolved.get(i) : saveToShelf(memberId, item);
+            int slotNo = item.getSlotNo() != null ? item.getSlotNo() : freeSlots.next();
+            finalSlots.put(myBook.getMybookId(), slotNo);
+            finalBooks.put(myBook.getMybookId(), myBook);
+        }
+
+        // ---- 기존 연결과 비교: 빠진 책/칸이 바뀐 책은 삭제, 새 책/칸이 바뀐 책은 추가 ----
+        Set<Long> kept = new HashSet<>();
+        List<CollectionBook> toDelete = new ArrayList<>();
+        for (CollectionBook cb : collectionBookRepository.findAllByCollection(collection)) {
+            Long mybookId = cb.getMybook().getMybookId();
+            Integer slotNo = finalSlots.get(mybookId);
+            if (slotNo != null && slotNo.equals(cb.getSlotNo())) {
+                kept.add(mybookId);
+            } else {
+                toDelete.add(cb);
+            }
+        }
+
+        // 삭제를 먼저 반영해야 칸이 바뀐 책을 같은 칸 제약(uk_collection_book_slot) 충돌 없이 다시 넣을 수 있다.
+        collectionBookRepository.deleteAll(toDelete);
+        collectionBookRepository.flush();
+
+        int inserted = 0;
+        for (Map.Entry<Long, Integer> entry : finalSlots.entrySet()) {
+            if (kept.contains(entry.getKey())) {
+                continue;
+            }
+            collectionBookRepository.save(CollectionBook.builder()
+                    .collection(collection)
+                    .mybook(finalBooks.get(entry.getKey()))
+                    .slotNo(entry.getValue())
+                    .build());
+            inserted++;
+        }
+
+        if (inserted > 0 || !toDelete.isEmpty()) {
+            // member의 lastBookActionAt 업데이트
+            memberRepository.updateLastBookActionAt(memberId, LocalDateTime.now());
+        }
+    }
+
+    /**
+     * 컬렉션 상세 응답 생성 - 항상 9칸
+     */
+    private CollectionDetailRes buildDetail(Collection collection) {
         Map<Integer, CollectionBook> bySlot = collectionBookRepository
                 .findAllWithBookByCollection(collection).stream()
                 .collect(Collectors.toMap(CollectionBook::getSlotNo, cb -> cb));
@@ -122,147 +311,6 @@ public class CollectionServiceImpl implements CollectionService {
     }
 
     /**
-     * 컬렉션 만들기
-     */
-    @Override
-    @Transactional
-    public CollectionRes createCollection(UUID memberId, CollectionReq req) {
-        String name = normalizeName(req.getName());
-
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new BaseException(NOT_FOUND_USER));
-
-        Collection collection = collectionRepository.save(
-                Collection.builder()
-                        .member(member)
-                        .name(name)
-                        .build());
-
-        return toCollectionRes(collection);
-    }
-
-    /**
-     * 컬렉션 이름 수정
-     */
-    @Override
-    @Transactional
-    public CollectionRes updateCollection(UUID memberId, Long collectionId, UpdateCollectionReq req) {
-        String name = normalizeName(req.getName());
-
-        Collection collection = getOwnedCollection(memberId, collectionId);
-        collection.updateName(name);
-
-        return toCollectionRes(collection);
-    }
-
-    /**
-     * 컬렉션에 담기 전 확인
-     */
-    @Override
-    @Transactional(readOnly = true)
-    public CollectionBookCheckRes checkBook(UUID memberId, Long collectionId, Integer aladinId) {
-        Collection collection = getOwnedCollection(memberId, collectionId);
-
-        Optional<MyBook> shelfBook = findShelfBook(memberId, aladinId);
-
-        boolean alreadyInCollection = shelfBook
-                .map(myBook -> collectionBookRepository.existsByCollectionAndMybook(collection, myBook))
-                .orElse(false);
-
-        return CollectionBookCheckRes.builder()
-                .onShelf(shelfBook.isPresent())
-                .mybookId(shelfBook.map(MyBook::getMybookId).orElse(null))
-                .alreadyInCollection(alreadyInCollection)
-                .build();
-    }
-
-    /**
-     * 컬렉션에 책 담기
-     * - 서가에 이미 있는 책: 바로 컬렉션에 담는다.
-     * - 서가에 없는 책: 서가에 추가할 때와 똑같이 서가에 저장(독서 상태/읽고 싶은 이유 포함)한 뒤 담는다.
-     * - 같은 컬렉션에는 같은 책을 한 번만, 최대 9권, 새 책은 맨 앞의 빈 칸에 들어간다.
-     */
-    @Override
-    @Transactional
-    public CollectionBookRes addBook(UUID memberId, Long collectionId, CollectionBookReq req) {
-        // 같은 컬렉션에 대한 담기/빼기를 직렬화 (칸 중복 방지)
-        Collection collection = collectionRepository
-                .findByCollectionIdAndMemberIdForUpdate(collectionId, memberId)
-                .orElseThrow(() -> new BaseException(NOT_FOUND_COLLECTION));
-
-        // 서가에서 삭제된 책이 차지하고 있던 칸 정리
-        collectionBookRepository.deleteInactiveBooks(collection);
-
-        // 1. 서가에 이미 있는 책인지 확인
-        Optional<MyBook> shelfBook = resolveShelfBook(memberId, req);
-
-        // 2. 이미 이 컬렉션에 담긴 책이면 안내 (정책서: "이미 이 컬렉션에 담긴 책이에요")
-        shelfBook.ifPresent(myBook -> {
-            if (collectionBookRepository.existsByCollectionAndMybook(collection, myBook)) {
-                throw new BaseException(ALREADY_IN_COLLECTION);
-            }
-        });
-
-        // 3. 맨 앞의 빈 칸 찾기 (9권이 가득 찼으면 담을 수 없다)
-        int slotNo = findFirstEmptySlot(collection);
-
-        // 4. 서가에 없는 책이면 서가에 먼저 저장
-        boolean savedToShelf = shelfBook.isEmpty();
-        MyBook myBook = shelfBook.orElseGet(() -> saveToShelf(memberId, req));
-
-        // 5. 컬렉션에 담기
-        collectionBookRepository.save(CollectionBook.builder()
-                .collection(collection)
-                .mybook(myBook)
-                .slotNo(slotNo)
-                .build());
-
-        // member의 lastBookActionAt 업데이트
-        memberRepository.updateLastBookActionAt(memberId, LocalDateTime.now());
-
-        return CollectionBookRes.builder()
-                .collectionId(collection.getCollectionId())
-                .mybookId(myBook.getMybookId())
-                .slotNo(slotNo)
-                .savedToShelf(savedToShelf)
-                .build();
-    }
-
-    /**
-     * 컬렉션에서 책 빼기
-     * - 그 칸만 빈 칸이 되고 다른 책의 칸은 바뀌지 않는다.
-     * - 서가의 책(나의 책)은 삭제되지 않는다.
-     */
-    @Override
-    @Transactional
-    public void removeBook(UUID memberId, Long collectionId, Long mybookId) {
-        Collection collection = collectionRepository
-                .findByCollectionIdAndMemberIdForUpdate(collectionId, memberId)
-                .orElseThrow(() -> new BaseException(NOT_FOUND_COLLECTION));
-
-        CollectionBook collectionBook = collectionBookRepository
-                .findByCollectionAndMybookId(collection, mybookId)
-                .orElseThrow(() -> new BaseException(NOT_FOUND_COLLECTION_BOOK));
-
-        collectionBookRepository.delete(collectionBook);
-
-        // member의 lastBookActionAt 업데이트
-        memberRepository.updateLastBookActionAt(memberId, LocalDateTime.now());
-    }
-
-    // ------------------------------------------------------------------
-    // private
-    // ------------------------------------------------------------------
-
-    /**
-     * 내 컬렉션 조회 (없거나 내 컬렉션이 아니면 NOT_FOUND_COLLECTION)
-     */
-    private Collection getOwnedCollection(UUID memberId, Long collectionId) {
-        return collectionRepository.findByCollectionIdAndMemberId(collectionId, memberId)
-                .orElseThrow(() -> new BaseException(NOT_FOUND_COLLECTION));
-    }
-
-    /**
      * 컬렉션 이름 정리 (앞뒤 공백 제거, 빈 이름 거부)
      */
     private String normalizeName(String name) {
@@ -273,60 +321,14 @@ public class CollectionServiceImpl implements CollectionService {
     }
 
     /**
-     * 서가에 이미 있는 책 찾기 (같은 알라딘 ID)
-     */
-    private Optional<MyBook> findShelfBook(UUID memberId, Integer aladinId) {
-        if (aladinId == null) {
-            return Optional.empty();
-        }
-        return collectionBookRepository
-                .findShelfBooksByMemberIdAndAladinId(memberId, String.valueOf(aladinId))
-                .stream()
-                .findFirst();
-    }
-
-    /**
-     * 요청에서 서가의 책 결정
-     * - mybookId 가 있으면 내 서가의 그 책
-     * - bookInfo 가 있으면 알라딘 ID 로 서가에서 찾기 (없으면 empty = 새로 저장해야 함)
-     */
-    private Optional<MyBook> resolveShelfBook(UUID memberId, CollectionBookReq req) {
-        if (req.getMybookId() != null) {
-            MyBook myBook = myBookRepository.findByMybookIdAndStatusIs(req.getMybookId(), MyBook.Status.ACTIVE)
-                    .orElseThrow(() -> new BaseException(NOT_FOUND_MY_BOOK));
-            if (!myBook.getMember().getMemberId().equals(memberId)) {
-                throw new BaseException(BOOK_NOT_OWNED_BY_MEMBER);
-            }
-            return Optional.of(myBook);
-        }
-
-        BookInfo bookInfo = req.getBookInfo();
-        if (bookInfo == null) {
-            throw new BaseException(INVALID_COLLECTION_BOOK_REQUEST);
-        }
-        return findShelfBook(memberId, bookInfo.getAladinId());
-    }
-
-    /**
-     * 맨 앞의 빈 칸 번호 (1~9). 모두 차 있으면 COLLECTION_FULL
-     */
-    private int findFirstEmptySlot(Collection collection) {
-        Set<Integer> used = new HashSet<>(collectionBookRepository.findSlotNosByCollection(collection));
-        return IntStream.rangeClosed(1, Collection.MAX_BOOKS)
-                .filter(slotNo -> !used.contains(slotNo))
-                .findFirst()
-                .orElseThrow(() -> new BaseException(COLLECTION_FULL));
-    }
-
-    /**
      * 서가에 책 저장 - 기존 MyBookService.addMyBook 을 그대로 사용한다.
      * (책/작가 생성, 독서 상태 결정, lastBookActionAt 갱신 등)
      */
-    private MyBook saveToShelf(UUID memberId, CollectionBookReq req) {
+    private MyBook saveToShelf(UUID memberId, CollectionBookReq item) {
         MyBookReq myBookReq = MyBookReq.builder()
-                .bookInfo(req.getBookInfo())
-                .historyInfo(req.getHistoryInfo())
-                .reason(req.getReason())
+                .bookInfo(item.getBookInfo())
+                .historyInfo(item.getHistoryInfo())
+                .reason(item.getReason())
                 .build();
 
         MyBookRes saved = myBookService.addMyBook(memberId, myBookReq);
@@ -344,14 +346,6 @@ public class CollectionServiceImpl implements CollectionService {
                                 .toList()
                         : List.of())
                 .coverImage(book.getCoverImage())
-                .build();
-    }
-
-    private CollectionRes toCollectionRes(Collection collection) {
-        return CollectionRes.builder()
-                .collectionId(collection.getCollectionId())
-                .name(collection.getName())
-                .createdAt(collection.getCreatedAt())
                 .build();
     }
 }
