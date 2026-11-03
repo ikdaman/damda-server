@@ -31,21 +31,21 @@ public class MyBookController {
 
     private final MyBookService myBookService;
 
-    /**
-     * 내 책 통합 검색
-     * GET /mybooks?query=검색어
-     * 정렬: 1순위 책 제목 정확도, 2순위 최신 등록순
-     */
-    @GetMapping
-    public ResponseEntity<PageRes<MyBookSearchRes.BookItem>> searchMyBooks(
-            @PageableDefault(page = 0, size = 10) Pageable pageable,
-            @RequestParam String query,
-            @AuthenticationPrincipal AuthMember authMember
-    ) {
-        return ResponseEntity.ok(myBookService.searchMyBooks(pageable, query, authMember.getMember()));
-    }
+//    /**
+//     * 내 책 통합 검색
+//     * GET /mybooks?query=검색어
+//     * 정렬: 1순위 책 제목 정확도, 2순위 최신 등록순
+//     */
+//    @GetMapping
+//    public ResponseEntity<PageRes<MyBookSearchRes.BookItem>> searchMyBooks(
+//            @PageableDefault(page = 0, size = 10) Pageable pageable,
+//            @RequestParam(required = false) String query,
+//            @AuthenticationPrincipal AuthMember authMember
+//    ) {
+//        return ResponseEntity.ok(myBookService.searchMyBooks(pageable, query, authMember.getMember()));
+//    }
 
-    @GetMapping("/store")
+    @GetMapping
     public ResponseEntity<PageRes<MyBookStorePageRes.BookItem>> getMyBookStore(
             @PageableDefault(page = 0, size = 5, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             @RequestParam(required = false) String keyword,
