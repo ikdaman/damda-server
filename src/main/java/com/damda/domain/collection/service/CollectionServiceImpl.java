@@ -175,9 +175,7 @@ public class CollectionServiceImpl implements CollectionService {
                         .collect(Collectors.toMap(MyBook::getMybookId, mb -> mb, (a, b) -> a));
 
         List<String> aladinIds = items.stream()
-                .filter(item -> item.getMybookId() == null
-                        && item.getBookInfo() != null
-                        && item.getBookInfo().getAladinId() != null)
+                .filter(item -> item.getMybookId() == null && item.getBookInfo() != null)
                 .map(item -> String.valueOf(item.getBookInfo().getAladinId()))
                 .distinct()
                 .toList();
@@ -200,8 +198,7 @@ public class CollectionServiceImpl implements CollectionService {
                     throw new BaseException(NOT_FOUND_MY_BOOK);
                 }
             } else if (item.getBookInfo() != null) {
-                Integer aladinId = item.getBookInfo().getAladinId();
-                shelfBook = aladinId == null ? null : shelfByAladinId.get(String.valueOf(aladinId));
+                shelfBook = shelfByAladinId.get(String.valueOf(item.getBookInfo().getAladinId()));
             } else {
                 throw new BaseException(INVALID_COLLECTION_BOOK_REQUEST);
             }
@@ -211,8 +208,7 @@ public class CollectionServiceImpl implements CollectionService {
                 if (!usedMybookIds.add(shelfBook.getMybookId())) {
                     throw new BaseException(ALREADY_IN_COLLECTION);
                 }
-            } else if (item.getBookInfo().getAladinId() != null
-                    && !newAladinIds.add(String.valueOf(item.getBookInfo().getAladinId()))) {
+            } else if (!newAladinIds.add(String.valueOf(item.getBookInfo().getAladinId()))) {
                 throw new BaseException(ALREADY_IN_COLLECTION);
             }
 
