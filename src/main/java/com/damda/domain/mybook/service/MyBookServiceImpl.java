@@ -184,16 +184,9 @@ public class MyBookServiceImpl implements MyBookService {
                                 .build()
                 ));
 
-        // Book 조회 또는 생성
-        Book book;
-        if (bookInfo.getAladinId() != null) {
-            // Aladin Id가 있는 경우 (ALADIN: 직접 추가)
-            book = bookRepository.findByAladinId(String.valueOf(bookInfo.getAladinId()))
-                    .orElseGet(() -> createNewMyBook(bookInfo));
-        } else {
-            // Aladin Id가 없는 경우 (CUSTOM: 직접 추가)
-            book = createNewMyBook(bookInfo);
-        }
+        // Book 조회 또는 생성 (알라딘 도서만 존재: aladinId 필수)
+        Book book = bookRepository.findByAladinId(String.valueOf(bookInfo.getAladinId()))
+                .orElseGet(() -> createNewMyBook(bookInfo));
 
         // Author 관계 생성
         if (!authorRepository.existsByBookAndWriter(book, writer)) {
@@ -252,9 +245,8 @@ public class MyBookServiceImpl implements MyBookService {
                 .totalPage(bookInfo.getTotalPage() != null ?
                         bookInfo.getTotalPage() : 0)
                 .coverImage(bookInfo.getCoverImage())
-                .aladinId(bookInfo.getAladinId() != null ?
-                        String.valueOf(bookInfo.getAladinId()) : null)
-                .source(Book.Source.valueOf(bookInfo.getSource()))
+                .aladinId(String.valueOf(bookInfo.getAladinId()))
+                .source(Book.Source.ALADIN)
                 .description(bookInfo.getDescription())
                 .publishDate(bookInfo.getPublishDate())
                 .build();
