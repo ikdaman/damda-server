@@ -27,7 +27,7 @@ public class MyBookReq {
     @Valid
     private HistoryInfo historyInfo;
 
-    @Size(max = 500, message = "추가 이유는 500자를 초과할 수 없습니다.")
+    @Size(max = 400, message = "추가 이유는 400자를 초과할 수 없습니다.")
     private String reason;
 
     @Builder

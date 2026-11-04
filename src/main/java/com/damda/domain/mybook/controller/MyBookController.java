@@ -76,7 +76,7 @@ public class MyBookController {
             @AuthenticationPrincipal AuthMember authMember
     ) {
         MyBookRes myBookRes = myBookService.addMyBook(authMember.getMember().getMemberId(), dto);
-        return ResponseEntity.status(HttpStatus.CREATED).build();
+        return ResponseEntity.status(HttpStatus.CREATED).body(myBookRes);
     }
 
     @DeleteMapping("/{mybook_id}")
