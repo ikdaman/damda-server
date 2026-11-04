@@ -28,4 +28,9 @@ public interface CollectionService {
      * 컬렉션 수정: 이름 + 최종 책 목록으로 전체 교체 (정책서 2-5)
      */
     CollectionDetailRes updateCollection(UUID memberId, Long collectionId, UpdateCollectionReq req);
+
+    /*
+     * 컬렉션에 담기 전 확인: 서가에 있는 책인지 / 이미 이 컬렉션에 담긴 책인지 (정책서 2-5)
+     */
+    CollectionBookCheckRes checkBook(UUID memberId, Long collectionId, Integer aladinId);
 }
