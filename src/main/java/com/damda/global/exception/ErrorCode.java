@@ -17,6 +17,7 @@ public enum ErrorCode {
     BAD_REQUEST_BY_VALIDATION(HttpStatus.BAD_REQUEST.value(), 4000001, "유효하지 않은 값입니다."),
     BAD_REQUEST_INVALID_DATE_FORMAT(HttpStatus.BAD_REQUEST.value(), 4000002, "날짜 형식이 올바르지 않습니다."),
     MEMO_CANNOT_BE_EMPTY_FOR_FREE_RECORD(HttpStatus.BAD_REQUEST.value(), 4000003, "자유 기록의 메모는 필수 값입니다."),
+    BAD_REQUEST_INVALID_PAGE_SIZE(HttpStatus.BAD_REQUEST.value(), 4000004, "페이지 크기는 1~100 사이의 값이어야 합니다."),
 
     /**
      * 401 Unauthorized
@@ -111,6 +112,7 @@ public enum ErrorCode {
     DATABASE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR.value(), 5000002,"데이터베이스 오류가 발생했습니다."),
     NULL_POINTER_EXCEPTION(HttpStatus.INTERNAL_SERVER_ERROR.value(), 5000003,"잘못된 값(NULL)이 처리되었습니다."),
     PERSIST_EXCEPTION_TO_THIRD_PARTY(HttpStatus.INTERNAL_SERVER_ERROR.value(), 5000004,"외부 저장소에 저장을 실패했습니다."),
+    OUTER_API_ERROR(HttpStatus.INTERNAL_SERVER_ERROR.value(), 5000005,"외부 API 호출 중 오류가 발생했습니다."),
 
     // Auth(01)
     FAILED_GENERATE_APP_TOKEN(HttpStatus.INTERNAL_SERVER_ERROR.value(), 5000101, "damda의 앱 토큰 생성에 실패했습니다."),
