@@ -25,6 +25,7 @@ import com.damda.domain.mybook.entity.Record;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -570,5 +571,30 @@ public class MyBookServiceImpl implements MyBookService {
                 .collect(Collectors.toList());
 
         return response;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Long> checkMyBook(UUID memberId, Long aladinId) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new BaseException(NOT_FOUND_USER));
+
+        HashMap<String, Long> result = new HashMap<>();
+
+        Book book = bookRepository.findByAladinId(String.valueOf(aladinId))
+                .orElse(null);
+
+        if(book == null) {
+            result.put("mybookId", null);
+            return result;
+        }
+
+        myBookRepository.findByMemberAndBookAndStatus(member, book, MyBook.Status.ACTIVE)
+                .ifPresentOrElse(
+                        myBook -> result.put("mybookId", myBook.getMybookId()),
+                        () -> result.put("mybookId", null)
+                );
+
+        return result;
     }
 }
