@@ -247,7 +247,6 @@ public class MyBookServiceImpl implements MyBookService {
                         bookInfo.getTotalPage() : 0)
                 .coverImage(bookInfo.getCoverImage())
                 .aladinId(String.valueOf(bookInfo.getAladinId()))
-                .source(Book.Source.ALADIN)
                 .description(bookInfo.getDescription())
                 .publishDate(bookInfo.getPublishDate())
                 .build();
@@ -327,76 +326,6 @@ public class MyBookServiceImpl implements MyBookService {
             }
             // readingStatus 업데이트
             mybook.updateReadingStatus();
-        }
-
-        // bookInfo 업데이트
-        if(mybook.getBook().getSource() == Book.Source.CUSTOM) {
-            if (myBookReq.getBookInfo().isPresent()) {
-                UpdateMyBookReq.UpdateBookInfo bookInfo = myBookReq.getBookInfo().get();
-
-                // title 업데이트
-                if (bookInfo.getTitle().isPresent()) {
-                    String title = bookInfo.getTitle().get();
-                    if (title.isBlank()) {
-                        throw new BaseException(BOOK_TITLE_CANNOT_BE_EMPTY);
-                    }
-                    mybook.getBook().updateTitle(title);
-                }
-
-                // publisher 업데이트
-                if (bookInfo.getPublisher().isPresent()) {
-                    String publisher = bookInfo.getPublisher().get();
-                    mybook.getBook().updatePublisher(publisher);
-                }
-
-                // publishDate 업데이트
-                if (bookInfo.getPublishDate().isPresent()) {
-                    String stringDate = bookInfo.getPublishDate().get();
-                    LocalDate publishDate = StringUtils.toLocalDate(stringDate);
-                    LocalDateTime publishedDateTime = null;
-
-                    if (publishDate != null) {
-                        publishedDateTime = publishDate.atStartOfDay();
-                    }
-                    mybook.getBook().updatePublishDate(publishedDateTime);
-                }
-
-                // isbn 업데이트
-                if (bookInfo.getIsbn().isPresent()) {
-                    String isbn = bookInfo.getIsbn().get();
-                    mybook.getBook().updateIsbn(isbn);
-                }
-
-                // totalPage 업데이트
-                if (bookInfo.getTotalPage().isPresent()) {
-                    Integer totalPage = bookInfo.getTotalPage().get();
-
-                    if (totalPage != null && totalPage < 0) {
-                        totalPage = null;
-                    }
-                    mybook.getBook().updateTotalPage(totalPage);
-                }
-
-                // author 업데이트
-                if (bookInfo.getAuthor().isPresent()) {
-                    String author = bookInfo.getAuthor().get();
-
-                    Writer writer = writerRepository.findByWriterName(author)
-                            .orElseGet(() -> writerRepository.save(
-                                    Writer.builder()
-                                            .writerName(author)
-                                            .build()
-                            ));
-
-                    // Author 관계 생성
-                    if (!authorRepository.existsByBookAndWriter(mybook.getBook(), writer)) {
-                        authorRepository.save(Author.builder()
-                                .book(mybook.getBook())
-                                .writer(writer)
-                                .build());
-                    }
-                }
-            }
         }
 
         // member의 lastBookActionAt 업데이트

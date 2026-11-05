@@ -27,11 +27,6 @@ public class Book extends BaseTime {
     @Column(name = "book_id")
     private Long bookId;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    @Builder.Default
-    private Source source = Source.ALADIN;
-
     @Column(nullable = false, length = 255)
     private String title;
 
@@ -60,12 +55,6 @@ public class Book extends BaseTime {
     @OneToMany(mappedBy = "book", fetch = FetchType.LAZY)
     private List<Author> author;
 
-    // 도서 출처 ENUM
-    public enum Source {
-        ALADIN,  // 알라딘 API
-        CUSTOM   // 사용자 직접 등록
-    }
-
     public void updateTitle(String title) {
         this.title = title;
     }
@@ -87,11 +76,10 @@ public class Book extends BaseTime {
     }
 
     @Builder
-    public Book(Long bookId, Source source, String title, String publisher,
+    public Book(Long bookId, String title, String publisher,
                 LocalDateTime publishDate, String description, String isbn,
                 int totalPage, String coverImage, String aladinId, List<Author> author) {
         this.bookId = bookId;
-        this.source = source;
         this.title = title;
         this.publisher = publisher;
         this.publishDate = publishDate;
