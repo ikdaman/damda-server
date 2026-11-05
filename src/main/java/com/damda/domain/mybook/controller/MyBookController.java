@@ -76,7 +76,7 @@ public class MyBookController {
             @AuthenticationPrincipal AuthMember authMember
     ) {
         MyBookRes myBookRes = myBookService.addMyBook(authMember.getMember().getMemberId(), dto);
-        return ResponseEntity.status(HttpStatus.CREATED).build();
+        return ResponseEntity.status(HttpStatus.CREATED).body(myBookRes);
     }
 
     @DeleteMapping("/{mybook_id}")
@@ -177,6 +177,19 @@ public class MyBookController {
                                                          @PathVariable Long mybookId) {
         List<RecordRes> res = myBookService.getAllRecords(authMember.getMember().getMemberId(), mybookId);
 
+        return ResponseEntity.ok(res);
+    }
+
+    /**
+     * 서가에 저장되어 있는 책인지 확인
+     * @param authMember Spring Security에서 인증된 회원 정보
+     * @param aladinId 알라딘 책 ID
+     * @return 나의 책 상세 정보
+     */
+    @GetMapping("/check")
+    public ResponseEntity<Map> checkMyBook(@AuthenticationPrincipal AuthMember authMember,
+                                                 @RequestParam Long aladinId) {
+        Map<String, Long> res = myBookService.checkMyBook(authMember.getMember().getMemberId(), aladinId);
         return ResponseEntity.ok(res);
     }
 }

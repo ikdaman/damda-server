@@ -81,4 +81,21 @@ public class CollectionController {
         return ResponseEntity.ok(
                 collectionService.updateCollection(authMember.getMember().getMemberId(), collectionId, dto));
     }
+
+    /**
+     * 컬렉션에 담기 전 확인 (정책서 2-5)
+     * GET /collections/{collectionId}/books/check?aladinId=123456
+     * - onShelf=true  → 저장 시트 없이 mybookId 로 바로 담기
+     * - onShelf=false → 저장 시트(상태/읽고 싶은 이유/날짜)를 거쳐 bookInfo 로 담기
+     * - alreadyInCollection=true → "이미 이 컬렉션에 담긴 책이에요" 안내
+     */
+    @GetMapping("/{collectionId}/books/check")
+    public ResponseEntity<CollectionBookCheckRes> checkBook(
+            @AuthenticationPrincipal AuthMember authMember,
+            @PathVariable Long collectionId,
+            @RequestParam Integer aladinId
+    ) {
+        return ResponseEntity.ok(
+                collectionService.checkBook(authMember.getMember().getMemberId(), collectionId, aladinId));
+    }
 }

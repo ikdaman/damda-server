@@ -20,16 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -140,6 +131,27 @@ public class CollectionServiceImpl implements CollectionService {
         applyBooks(memberId, collection, req.getBooks());
 
         return buildDetail(collection);
+    }
+
+    /**
+     * 컬렉션에 담기 전 확인
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public CollectionBookCheckRes checkBook(UUID memberId, Long collectionId, Integer aladinId) {
+        Collection collection = getOwnedCollection(memberId, collectionId);
+
+        Optional<MyBook> shelfBook = findShelfBook(memberId, aladinId);
+
+        boolean alreadyInCollection = shelfBook
+                .map(myBook -> collectionBookRepository.existsByCollectionAndMybook(collection, myBook))
+                .orElse(false);
+
+        return CollectionBookCheckRes.builder()
+                .onShelf(shelfBook.isPresent())
+                .mybookId(shelfBook.map(MyBook::getMybookId).orElse(null))
+                .alreadyInCollection(alreadyInCollection)
+                .build();
     }
 
     // ------------------------------------------------------------------
@@ -307,6 +319,14 @@ public class CollectionServiceImpl implements CollectionService {
     }
 
     /**
+     * 내 컬렉션 조회 (없거나 내 컬렉션이 아니면 NOT_FOUND_COLLECTION)
+     */
+    private Collection getOwnedCollection(UUID memberId, Long collectionId) {
+        return collectionRepository.findByCollectionIdAndMemberId(collectionId, memberId)
+                .orElseThrow(() -> new BaseException(NOT_FOUND_COLLECTION));
+    }
+
+    /**
      * 컬렉션 이름 정리 (앞뒤 공백 제거, 빈 이름 거부)
      */
     private String normalizeName(String name) {
@@ -314,6 +334,19 @@ public class CollectionServiceImpl implements CollectionService {
             throw new BaseException(COLLECTION_NAME_CANNOT_BE_EMPTY);
         }
         return name.trim();
+    }
+
+    /**
+     * 서가에 이미 있는 책 찾기 (같은 알라딘 ID)
+     */
+    private Optional<MyBook> findShelfBook(UUID memberId, Integer aladinId) {
+        if (aladinId == null) {
+            return Optional.empty();
+        }
+        return collectionBookRepository
+                .findShelfBooksByMemberIdAndAladinId(memberId, String.valueOf(aladinId))
+                .stream()
+                .findFirst();
     }
 
     /**

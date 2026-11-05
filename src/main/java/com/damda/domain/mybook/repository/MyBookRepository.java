@@ -125,4 +125,6 @@ public interface MyBookRepository extends JpaRepository<MyBook, Long> {
             @Param("mybookId") Long mybookId,
             @Param("memberId") UUID memberId
     );
+
+    Optional<MyBook> findByMemberAndBookAndStatus(Member member, Book book, MyBook.Status status);
 }

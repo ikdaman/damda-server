@@ -42,6 +42,8 @@ public interface CollectionBookRepository extends JpaRepository<CollectionBook, 
            "ORDER BY cb.slotNo ASC")
     List<CollectionBook> findAllWithBookByMemberId(@Param("memberId") UUID memberId);
 
+    boolean existsByCollectionAndMybook(Collection collection, MyBook mybook);
+
     /**
      * 컬렉션에 현재 저장된 연결 (수정 시 최종 목록과 비교용)
      */
@@ -88,5 +90,21 @@ public interface CollectionBookRepository extends JpaRepository<CollectionBook, 
     List<MyBook> findShelfBooksByMemberIdAndAladinIds(
             @Param("memberId") UUID memberId,
             @Param("aladinIds") List<String> aladinIds
+    );
+
+    /**
+     * 서가에 이미 있는 책 찾기 (같은 알라딘 ID, ACTIVE)
+     * - 같은 책은 서가에 하나만 둘 수 있다. (정책서 3-7)
+     * - 나의 책 쪽에 중복이 남아 있어도 깨지지 않도록 List 로 받아 가장 먼저 저장한 책을 쓴다.
+     */
+    @Query("SELECT mb FROM MyBook mb " +
+            "JOIN FETCH mb.book b " +
+            "WHERE mb.member.memberId = :memberId " +
+            "AND b.aladinId = :aladinId " +
+            "AND mb.status = 'ACTIVE' " +
+            "ORDER BY mb.createdAt ASC")
+    List<MyBook> findShelfBooksByMemberIdAndAladinId(
+            @Param("memberId") UUID memberId,
+            @Param("aladinId") String aladinId
     );
 }
