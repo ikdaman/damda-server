@@ -56,4 +56,9 @@ public interface MyBookService {
      * 기록 전체 조회
      */
     List<RecordRes> getAllRecords(UUID memberId, Long mybookId);
+
+    /*
+     * 책 확인
+     */
+    Map<String, Long> checkMyBook(UUID memberId, Long aladinId);
 }

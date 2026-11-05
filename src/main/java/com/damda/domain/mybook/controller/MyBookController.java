@@ -179,4 +179,17 @@ public class MyBookController {
 
         return ResponseEntity.ok(res);
     }
+
+    /**
+     * 서가에 저장되어 있는 책인지 확인
+     * @param authMember Spring Security에서 인증된 회원 정보
+     * @param aladinId 알라딘 책 ID
+     * @return 나의 책 상세 정보
+     */
+    @GetMapping("/check")
+    public ResponseEntity<Map> checkMyBook(@AuthenticationPrincipal AuthMember authMember,
+                                                 @RequestParam Long aladinId) {
+        Map<String, Long> res = myBookService.checkMyBook(authMember.getMember().getMemberId(), aladinId);
+        return ResponseEntity.ok(res);
+    }
 }
