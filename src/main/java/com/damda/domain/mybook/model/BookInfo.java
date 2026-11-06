@@ -20,11 +20,6 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class BookInfo {
-
-    @NotBlank(message = "책 출처는 필수입니다.")
-    @Pattern(regexp = "^(ALADIN|CUSTOM)$", message = "출처는 ALADIN 또는 CUSTOM이어야 합니다.")
-    private String source;
-
     private Integer aladinId;
 
     @IsbnValidator
@@ -49,10 +44,9 @@ public class BookInfo {
     private String coverImage;
 
     @Builder
-    public BookInfo(String source, Integer aladinId, String isbn, String title,
+    public BookInfo(Integer aladinId, String isbn, String title,
                     String author, String publisher, String description,
                     Integer totalPage, LocalDateTime publishDate, String coverImage) {
-        this.source = source;
         this.aladinId = aladinId;
         this.isbn = isbn;
         this.title = title;

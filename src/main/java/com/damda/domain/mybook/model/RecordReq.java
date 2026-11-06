@@ -15,7 +15,7 @@ public class RecordReq {
     @NotNull(message = "카테고리는 필수입니다.")
     private String recordType;
 
-    @Size(max = 400, message = "메모는 500자를 초과할 수 없습니다.")
+    @Size(max = 400, message = "메모는 400자를 초과할 수 없습니다.")
     private String memo;
 
     @NotNull(message = "날짜는 필수입니다.")
