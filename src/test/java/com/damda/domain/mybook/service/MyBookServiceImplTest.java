@@ -70,7 +70,6 @@ class MyBookServiceImplTest {
         // 커스텀 책을 최소 정보만으로 생성 (작가 정보 없음)
         Book customBook = Book.builder()
                 .title("최소 정보 커스텀 책")
-                .source(Book.Source.CUSTOM)
                 .isbn("9780000000000")
                 .publisher("Unknown")
                 .totalPage(0)
@@ -117,7 +116,6 @@ class MyBookServiceImplTest {
         // 커스텀 책 + 작가 정보
         Book customBook = Book.builder()
                 .title("작가 있는 커스텀 책")
-                .source(Book.Source.CUSTOM)
                 .isbn("9780000000001")
                 .publisher("테스트 출판사")
                 .totalPage(0)
@@ -175,7 +173,6 @@ class MyBookServiceImplTest {
         // 알라딘 책 + 작가
         Book aladinBook = Book.builder()
                 .title("알라딘 책")
-                .source(Book.Source.ALADIN)
                 .aladinId("12345")
                 .isbn("9788901234567")
                 .publisher("알라딘 출판사")
