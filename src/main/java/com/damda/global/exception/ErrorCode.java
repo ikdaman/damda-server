@@ -18,6 +18,7 @@ public enum ErrorCode {
     BAD_REQUEST_INVALID_DATE_FORMAT(HttpStatus.BAD_REQUEST.value(), 4000002, "날짜 형식이 올바르지 않습니다."),
     MEMO_CANNOT_BE_EMPTY_FOR_FREE_RECORD(HttpStatus.BAD_REQUEST.value(), 4000003, "자유 기록의 메모는 필수 값입니다."),
     BAD_REQUEST_INVALID_PAGE_SIZE(HttpStatus.BAD_REQUEST.value(), 4000004, "페이지 크기는 1~100 사이의 값이어야 합니다."),
+    BAD_REQUEST_WRONG_SEARCH_TYPE(HttpStatus.BAD_REQUEST.value(), 4000005, "검색 유형은 ISBN13 또는 aladinId만 가능합니다."),
 
     /**
      * 401 Unauthorized

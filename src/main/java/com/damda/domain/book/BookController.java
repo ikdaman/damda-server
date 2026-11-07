@@ -43,4 +43,17 @@ public class BookController {
         return ResponseEntity.ok(res);
     }
 
+    /**
+     * 책 상세조회
+     * @param searchType 검색 유형(ISBN13 or aladinId)
+     * @param query 검색어
+     * @return 책목록
+     */
+    @GetMapping("/detail")
+    public ResponseEntity<SearchResult> getBook(@RequestParam(defaultValue="ISBN13") String searchType, @RequestParam String query) {
+        SearchResult res = bookService.searchBook(searchType, query);
+
+        return ResponseEntity.ok(res);
+
+    }
 }

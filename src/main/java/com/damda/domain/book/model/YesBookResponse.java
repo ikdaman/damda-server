@@ -29,6 +29,7 @@ public record YesBookResponse(
             String publisher,    // 출판사
             Integer pages,       // 페이지 수 (nullable)
             String cover,        // 책 표지 이미지 URL
-            String publishDate   // 출간일
+            String publishDate,   // 출간일
+            String link         // 책 상세 페이지 URL
     ) {}
 }
