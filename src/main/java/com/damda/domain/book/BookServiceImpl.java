@@ -13,6 +13,7 @@ import org.springframework.web.client.RestClient;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
+import static com.damda.global.exception.ErrorCode.BAD_REQUEST_WRONG_SEARCH_TYPE;
 import static com.damda.global.exception.ErrorCode.OUTER_API_ERROR;
 
 @Service
@@ -65,5 +66,38 @@ public class BookServiceImpl {
                 .build();
 
         return pageRes;
+    }
+
+    public SearchResult searchBook(String searchType, String query) {
+        if(!searchType.equals("ISBN13") && !searchType.equals("aladinId")) {
+            throw new BaseException(BAD_REQUEST_WRONG_SEARCH_TYPE);
+        }
+
+        YesBookResponse yesBookResponse = restClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("v1/goods/itemDetail")
+                        .queryParam("query", query)
+                        .queryParam("searchType", searchType.equals("ISBN13") ? "ISBN" : "itemId")
+                        .queryParam("detail", "Y")
+                        .build())
+                .retrieve()
+                .onStatus(HttpStatusCode::isError,(request, res) -> {
+                    log.error(request.getURI().toString(), "예스24 API 요청 오류: " + res.getStatusCode(), res.getStatusCode().value());
+                    throw new BaseException(OUTER_API_ERROR);
+                })
+                .body(YesBookResponse.class);
+
+        SearchResult response = SearchResult.builder()
+                .aladinId(yesBookResponse.data().items().get(0).itemId())
+                .title(yesBookResponse.data().items().get(0).title())
+                .author(yesBookResponse.data().items().get(0).author())
+                .publisher(yesBookResponse.data().items().get(0).publisher())
+                .totalPages(yesBookResponse.data().items().get(0).pages())
+                .coverImage(yesBookResponse.data().items().get(0).cover())
+                .publishDate(LocalDate.parse(yesBookResponse.data().items().get(0).publishDate(), INPUT).format(OUTPUT))
+                .link(yesBookResponse.data().items().get(0).link())
+                .build();
+
+        return response;
     }
 }
