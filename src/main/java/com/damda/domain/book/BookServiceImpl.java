@@ -77,7 +77,7 @@ public class BookServiceImpl {
                 .uri(uriBuilder -> uriBuilder
                         .path("v1/goods/itemDetail")
                         .queryParam("query", query)
-                        .queryParam("searchType", searchType.equals("ISBN13") ? "ISBN" : "itemId")
+                        .queryParam("searchType", searchType.equals("ISBN13") ? "ISBN13" : "ItemId")
                         .queryParam("detail", "Y")
                         .build())
                 .retrieve()
