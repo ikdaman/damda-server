@@ -33,6 +33,7 @@ public class BookServiceImpl {
                         .queryParam("pageSize", pageSize)
                         .queryParam("detail", "Y")
                         .queryParam("category", "BOOK")
+                        .queryParam("sort", "RELATION")
                         .build())
                 .retrieve()
                 .onStatus(HttpStatusCode::isError,(request, res) -> {
